@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — Single File v1</title>
+<title>Pocket Planetarium — Single File v1.1</title>
 <style>
   :root{
     --bg:#0b0f17; --panel:#101827; --ink:#e6efff; --muted:#9bb0d7;
@@ -17,7 +17,7 @@
   .chip{padding:.25rem .55rem;border-radius:999px;background:#12233f;color:var(--muted);font-size:12px;border:1px solid #23416b}
   .pill{display:inline-flex;align-items:center;gap:6px;padding:.2rem .5rem;border:1px solid #23416b;border-radius:999px;color:var(--muted);font-size:12px}
   #left{grid-row:2/4;grid-column:1;background:linear-gradient(180deg,#0f1626,#0c1320);border:1px solid var(--edge);border-radius:12px;padding:10px;overflow:auto}
-  #canvasWrap{grid-row:2;grid-column:2;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--edge);background:radial-gradient(900px 650px at 50% 50%, #08111c 0%, #060a12 70%, #04070c 100%)}
+  #canvasWrap{grid-row:2;grid-column:2;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--edge);background:radial-gradient(900px 650px at 50% 50%, #08111c 0%, #060a12 70%, #04070c 100%);min-height:420px}
   #sky{width:100%;height:100%;display:block;cursor:grab}
   #overlay{position:absolute;inset:0;pointer-events:none}
   #bottom{grid-row:3;grid-column:2;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#0f1626,#0c1320);border:1px solid var(--edge);border-radius:12px;padding:10px}
@@ -43,14 +43,13 @@
   #toast.show{opacity:1;transform:translateY(0)}
   .kbd{border:1px solid #2a3f64;background:#0e1a30;border-radius:6px;padding:.05rem .35rem;font-size:12px;color:var(--muted)}
   canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
-  a.link{color:#86f3ff;text-decoration:none;border-bottom:1px dashed #3a6c8f}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
     <h1>🌌 Pocket Planetarium</h1>
-    <span class="chip">Single-file v1</span>
+    <span class="chip">Single-file v1.1</span>
     <span class="pill">Zoom <span id="zoomRead">1.0×</span></span>
     <span class="pill">FOV <span id="fovRead">180°</span></span>
     <span class="pill">Lat <span id="latRead">—</span></span>
@@ -131,7 +130,7 @@
     <button class="btn" id="resetView">Reset View</button>
     <span class="note">Projection: fisheye all-sky (zenith at center)</span>
     <span style="flex:1"></span>
-    <span class="note">Open source next rev. This is a lightweight demo with procedural stars + simplified planet positions (good to ~1–2°).</span>
+    <span class="note">This demo uses procedural stars + simplified planet positions.</span>
   </div>
 </div>
 
@@ -144,21 +143,19 @@ const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
 const mod = (x,m)=>((x%m)+m)%m;
 
 function jdFromDate(date){
-  // Convert JS Date (UTC) to Julian Day
   const t = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(),
                      date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds())/86400000 + 2440587.5;
   return t;
 }
 function gmst(jd){
-  // Vallado approximation for GMST in radians
   const T = (jd - 2451545.0)/36525.0;
   let gmst = 67310.54841 + (876600*3600 + 8640184.812866)*T + 0.093104*T*T - 6.2e-6*T*T*T;
-  gmst = mod(gmst, 86400)/240.0; // in degrees
+  gmst = mod(gmst, 86400)/240.0;
   return gmst*DEG;
 }
 function lst(jd, lonRad){ return mod(gmst(jd) + lonRad, 2*Math.PI); }
 
-function hmsFromRad(alpha){ // RA radians -> hh:mm
+function hmsFromRad(alpha){
   const h = mod(alpha,2*Math.PI)*12/Math.PI;
   const hh = Math.floor(h);
   const mm = Math.floor((h-hh)*60);
@@ -186,8 +183,6 @@ function radecFromEcliptic(lam, beta){
 }
 
 /* ===================== Simplified planets ===================== */
-/* Low-precision heliocentric ecliptic elements (J2000) for Mercury..Saturn.
-   Source: common textbook values; adequate to ~1–2° for demo. */
 const PLANETS = [
   { name:"Mercury", color:"#a7d0ff", R:2.6,  a:0.38709927, e:0.20563593, I:7.00497902, L:252.25032350, lp:77.45779628, o:48.33076593 },
   { name:"Venus",   color:"#ffe6a3", R:3.0,  a:0.72333566, e:0.00677672, I:3.39467605, L:181.97909950, lp:131.60246718,o:76.67984255 },
@@ -201,12 +196,10 @@ function planetPositionEcliptic(name, jd){
   const p = PLANETS.find(p=>p.name===name);
   const a=p.a, e=p.e, I=(p.I+0*T)*DEG, L=(p.L+36000.770*T)*DEG, lp=(p.lp+0*T)*DEG, o=(p.o+0*T)*DEG;
   const M = mod(L - lp, 2*Math.PI);
-  // Solve Kepler
   let E = M;
   for(let i=0;i<5;i++){ E = M + e*Math.sin(E); }
   const nu = 2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2));
   const r = a*(1-e*Math.cos(E));
-  // Perifocal coords
   const xh = r*(Math.cos(o)*Math.cos(nu+lp-o) - Math.sin(o)*Math.sin(nu+lp-o)*Math.cos(I));
   const yh = r*(Math.sin(o)*Math.cos(nu+lp-o) + Math.cos(o)*Math.sin(nu+lp-o)*Math.cos(I));
   const zh = r*(Math.sin(nu+lp-o)*Math.sin(I));
@@ -216,9 +209,7 @@ function geocentricEquatorial(name, jd){
   const eps = 23.43928*DEG;
   const earth = planetPositionEcliptic("Earth", jd);
   const pt = planetPositionEcliptic(name, jd);
-  // Geocentric (planet - earth)
   const x = pt.x - earth.x, y = pt.y - earth.y, z = pt.z - earth.z;
-  // Rotate ecliptic -> equatorial
   const xe = x;
   const ye = y*Math.cos(eps) - z*Math.sin(eps);
   const ze = y*Math.sin(eps) + z*Math.cos(eps);
@@ -228,7 +219,7 @@ function geocentricEquatorial(name, jd){
   return {ra, dec, dist};
 }
 
-/* ===================== Procedural Stars (bright-ish) ===================== */
+/* ===================== Procedural Stars (brighter) ===================== */
 function seededRandom(seed){
   let t = seed>>>0;
   return function(){
@@ -238,20 +229,16 @@ function seededRandom(seed){
     return ((r ^ (r>>>14)) >>> 0) / 4294967296;
   }
 }
-// Generate ~4000 stars with galactic belt bias (not catalog-accurate; demo only)
-function makeStars(n=4000, seed=1){
+function makeStars(n=6000, seed=2025){
   const rnd = seededRandom(seed);
   const out=[];
   for(let i=0;i<n;i++){
-    // sample ecliptic latitude with slight clustering near galactic-like band:
     const u = rnd(), v = rnd(), w = rnd();
-    let ra = 2*Math.PI*u;
-    // bias declination toward mid-lats to mimic MW arc visually
-    const x = Math.acos(1 - 2*v) - Math.PI/2; // uniform sphere -> dec
-    const bias = 0.35*Math.sin(ra*0.5) // crude waviness
-               + 0.45*Math.sin((ra+1.2)*1.0);
+    const ra = 2*Math.PI*u;
+    const x = Math.acos(1 - 2*v) - Math.PI/2;
+    const bias = 0.35*Math.sin(ra*0.5) + 0.45*Math.sin((ra+1.2)*1.0);
     const dec = clamp(x + bias*DEG*15, -Math.PI/2, Math.PI/2);
-    const mag = -1.0 + -2*Math.log10(0.001 + w*w*w); // more faint than bright
+    const mag = 1.5 + -2*Math.log10(0.02 + w*w);
     out.push({ra, dec, mag});
   }
   return out;
@@ -270,6 +257,7 @@ const DSOS=[
 /* ===================== Drawing + Projection ===================== */
 const sky = document.getElementById('sky');
 const ol = document.getElementById('overlay');
+const wrap = document.getElementById('canvasWrap');
 const ctx = sky.getContext('2d');
 const octx = ol.getContext('2d');
 
@@ -277,45 +265,50 @@ let W=0,H=0, R=0, scale=1, fov=180*DEG;
 let lat = 33.422*DEG, lon = -111.822*DEG;
 let time = new Date();
 let dragging=false, rotating=false, lastX=0, lastY=0;
-let yaw=0, pitch=0; // view rotation in az/alt space
+let yaw=0, pitch=0;
 let mirror=false, showLabels=true, showGrid=true, showEcliptic=true, showMW=true, showDSO=true, showPlanets=true;
 
-const stars = makeStars(4200, 2025);
+const stars = makeStars();
 
 function resize(){
   const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
-  W = sky.clientWidth; H = sky.clientHeight; R = Math.min(W,H)/2;
-  sky.width = W*dpr; sky.height = H*dpr; ol.width=sky.width; ol.height=sky.height;
-  ctx.setTransform(dpr,0,0,dpr,0,0); octx.setTransform(dpr,0,0,dpr,0,0);
+  W = Math.max(1, wrap.clientWidth);
+  H = Math.max(1, wrap.clientHeight);
+  R = Math.min(W,H)/2;
+  sky.width = Math.floor(W*dpr);
+  sky.height = Math.floor(H*dpr);
+  ol.width = sky.width;
+  ol.height = sky.height;
+  sky.style.width = W + "px";
+  sky.style.height = H + "px";
+  ol.style.width = W + "px";
+  ol.style.height = H + "px";
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  octx.setTransform(dpr,0,0,dpr,0,0);
   draw();
 }
 
 function project(az, alt){
-  // Fisheye: zenith at center, horizon at edge; theta = (90° - alt)
   let theta = (Math.PI/2 - alt);
   const maxTheta = fov/2;
   if(theta>maxTheta) return null;
   let r = (theta/maxTheta) * R * scale;
   let x = r*Math.sin(az + yaw);
   let y = -r*Math.cos(az + yaw);
-  // pitch rotates alt around x-axis in screen space (approx)
-  const s = Math.sin(pitch), c = Math.cos(pitch);
-  const yy = y*c - 0*s; // keep simple for speed
+  const c = Math.cos(pitch);
+  const yy = y*c;
   x = mirror ? -x : x;
   return {x:W/2 + x, y:H/2 + yy, r};
 }
 
 function drawBackground(){
   ctx.clearRect(0,0,W,H);
-  // subtle vignette
   const g = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,R*1.1);
   g.addColorStop(0,"rgba(4,12,24,0)");
   g.addColorStop(1,"rgba(0,0,0,0.6)");
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  // horizon circle
   ctx.strokeStyle="#203456"; ctx.lineWidth=1.25;
   ctx.beginPath(); ctx.arc(W/2,H/2,R*scale,0,2*Math.PI); ctx.stroke();
-  // N marker
   const n = project(0,0); if(n){
     ctx.fillStyle="#9bb2da"; ctx.font="12px system-ui";
     ctx.fillText("N", n.x-3, n.y-6);
@@ -326,7 +319,6 @@ function drawGrid(lstRad){
   if(!showGrid) return;
   ctx.strokeStyle="#1f3358"; ctx.lineWidth=0.8;
   ctx.setLineDash([4,6]);
-  // Az rings (altitude circles every 15°)
   ctx.beginPath();
   for(let alt=75*DEG; alt>0; alt-=15*DEG){
     const theta = (Math.PI/2 - alt);
@@ -336,12 +328,11 @@ function drawGrid(lstRad){
   }
   ctx.stroke();
   ctx.setLineDash([]);
-  // Azimuth spokes each 30°
   ctx.strokeStyle="#25406b"; ctx.lineWidth=0.8;
   for(let az=0; az<360; az+=30){
     const a = az*DEG;
-    const p1 = project(a, 0.001); // just above horizon
-    const p2 = project(a, Math.PI/2-0.001); // near center
+    const p1 = project(a, 0.001);
+    const p2 = project(a, Math.PI/2-0.001);
     if(p1 && p2){
       ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
       ctx.fillStyle="#7ea1d6"; ctx.font="11px system-ui";
@@ -355,12 +346,11 @@ function drawMilkyWay(){
   ctx.save();
   ctx.globalAlpha=0.22;
   ctx.fillStyle="#9ec9ff";
-  // render several translucent belts to hint MW (approx curve)
   for(let k=0;k<4;k++){
     ctx.beginPath();
     for(let i=0;i<=360;i+=2){
       const az = i*DEG;
-      const alt = (20*DEG*Math.sin((i*DEG)+k*0.7) + 20*DEG) * 0.5; // wavy band
+      const alt = (20*DEG*Math.sin((i*DEG)+k*0.7) + 20*DEG) * 0.5;
       const p = project(az, alt);
       if(!p) continue;
       if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
@@ -393,8 +383,8 @@ function drawStars(){
     const {az,alt} = azAltFromRADec(s.ra,s.dec, lat, currentLST);
     if(alt<=0) continue;
     const p = project(az,alt); if(!p) continue;
-    const size = clamp(2.5 - 0.35*s.mag, 0.2, 2.2);
-    ctx.fillStyle = "rgba(205,223,255,0.9)";
+    const size = clamp(2.2 - 0.28*s.mag, 0.6, 2.6);
+    ctx.fillStyle = "rgba(210,230,255,0.95)";
     ctx.beginPath(); ctx.arc(p.x,p.y,size,0,2*Math.PI); ctx.fill();
   }
   ctx.restore();
@@ -409,7 +399,7 @@ function drawDSO(){
     const {az,alt} = azAltFromRADec(d.ra,d.dec, lat, currentLST);
     if(alt<=0) continue;
     const p=project(az,alt); if(!p) continue;
-    ctx.beginPath(); ctx.arc(p.x,p.y,3.5,0,2*Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(p.x,p.y,3.8,0,2*Math.PI); ctx.stroke();
     if(showLabels) ctx.fillText("⌾ "+d.name, p.x+6, p.y-6);
   }
   ctx.restore();
@@ -425,7 +415,7 @@ function drawPlanets(){
     if(alt<=0) continue;
     const p=project(az,alt); if(!p) continue;
     ctx.fillStyle = PLANETS.find(x=>x.name===pl).color;
-    ctx.beginPath(); ctx.arc(p.x,p.y,3.5,0,2*Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x,p.y,3.8,0,2*Math.PI); ctx.fill();
     if(showLabels){ ctx.fillText(\`◍ \${pl}\`, p.x+6, p.y-6); }
   }
   ctx.restore();
@@ -433,7 +423,6 @@ function drawPlanets(){
 
 function drawInfo(){
   octx.clearRect(0,0,W,H);
-  // Nothing dynamic separate yet; reserved for hover/pick in next rev
 }
 
 let currentJD=0, currentLST=0;
@@ -460,7 +449,6 @@ function toast(msg, t=1600){
 }
 function setNow(){
   time = new Date();
-  // set local date/time inputs
   const d=document.getElementById('date'), ti=document.getElementById('time');
   const pad=n=>n.toString().padStart(2,'0');
   d.value = \`\${time.getFullYear()}-\${pad(time.getMonth()+1)}-\${pad(time.getDate())}\`;
@@ -472,7 +460,6 @@ function fromInputs(){
   if(d){
     const parts = d.split('-').map(Number);
     const tp = t.split(':').map(Number);
-    // Interpret as local time, convert to UTC by subtracting timezone offset
     const local = new Date(parts[0], parts[1]-1, parts[2], tp[0]||0, tp[1]||0, tp[2]||0 || 0);
     time = new Date(local.getTime() - local.getTimezoneOffset()*60000);
   }
@@ -526,7 +513,7 @@ window.addEventListener('mousemove', (e)=>{
   const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
   const k = 0.003;
   if(rotating){ pitch = clamp(pitch + dy*k, -0.6, 0.6); yaw += dx*k; }
-  else{ yaw += dx*k; /* vertical drag = slight tilt to mimic pan */ pitch = clamp(pitch - dy*k*0.4, -0.6, 0.6); }
+  else{ yaw += dx*k; pitch = clamp(pitch - dy*k*0.4, -0.6, 0.6); }
   draw();
 });
 sky.addEventListener('wheel', (e)=>{ e.preventDefault(); const z=parseFloat(document.getElementById('zoom').value); const nz = clamp(z*(e.deltaY<0?1.05:0.95), 0.6, 3.0); document.getElementById('zoom').value=nz; scale=nz; document.getElementById('zoomRead').textContent=scale.toFixed(2)+"×"; draw();}, {passive:false});
@@ -538,8 +525,7 @@ document.getElementById('resetView').onclick = ()=>{ yaw=0; pitch=0; scale=1; do
 /* ===================== Animate ===================== */
 function tick(){
   if(playing){
-    time = new Date(time.getTime() + 1000*rate/60); // ~60fps
-    // Update visible inputs every second or so
+    time = new Date(time.getTime() + 1000*rate/60);
     if(Math.floor(performance.now()/1000)%1===0){
       const pad=n=>n.toString().padStart(2,'0');
       document.getElementById('time').value = \`\${pad(time.getHours())}:\${pad(time.getMinutes())}:\${pad(time.getSeconds())}\`;
@@ -553,9 +539,15 @@ function tick(){
 /* ===================== Init ===================== */
 function init(){
   setNow();
-  resize();
-  window.addEventListener('resize', resize);
-  draw();
+  requestAnimationFrame(()=>{
+    resize();
+    if('ResizeObserver' in window){
+      const ro = new ResizeObserver(()=>resize());
+      ro.observe(document.getElementById('canvasWrap'));
+    }else{
+      window.addEventListener('resize', resize);
+    }
+  });
   tick();
 }
 init();
