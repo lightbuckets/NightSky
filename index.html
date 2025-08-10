@@ -3,12 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.3 (Planets + Messier)</title>
+<title>Pocket Planetarium — v1.4 (Hardened)</title>
 <style>
   :root{
     --bg:#0b0f17; --panel:#101827; --ink:#e6efff; --muted:#9bb0d7;
-    --accent:#78e3ff; --accent2:#a0ffcf; --warn:#ffcc66;
-    --grid:#233a63; --edge:#172744;
+    --accent:#78e3ff; --edge:#172744;
   }
   html,body{height:100%;margin:0;background:radial-gradient(1400px 900px at 68% 18%, #0f1d35 0%, #0b0f17 60%, #070a11 100%);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
   #app{display:grid;grid-template-rows:64px 1fr 84px;grid-template-columns:340px 1fr;gap:10px;height:100%;padding:10px;box-sizing:border-box}
@@ -17,7 +16,7 @@
   .chip{padding:.25rem .55rem;border-radius:999px;background:#12233f;color:var(--muted);font-size:12px;border:1px solid #23416b}
   .pill{display:inline-flex;align-items:center;gap:6px;padding:.2rem .5rem;border:1px solid #23416b;border-radius:999px;color:var(--muted);font-size:12px}
   #left{grid-row:2/4;grid-column:1;background:linear-gradient(180deg,#0f1626,#0c1320);border:1px solid var(--edge);border-radius:12px;padding:10px;overflow:auto}
-  #canvasWrap{grid-row:2;grid-column:2;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--edge);background:radial-gradient(900px 650px at 50% 50%, #08111c 0%, #060a12 70%, #04070c 100%);min-height:480px}
+  #canvasWrap{grid-row:2;grid-column:2;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--edge);background:radial-gradient(900px 650px at 50% 50%, #08111c 0%, #060a12 70%, #04070c 100%);min-height:60vh}
   #sky{width:100%;height:100%;display:block;cursor:grab}
   #overlay{position:absolute;inset:0;pointer-events:none}
   #bottom{grid-row:3;grid-column:2;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#0f1626,#0c1320);border:1px solid var(--edge);border-radius:12px;padding:10px}
@@ -29,7 +28,6 @@
   .btn{background:#13213a;border:1px solid #1b2a47;color:var(--ink);padding:.48rem .72rem;border-radius:10px;font-weight:700;cursor:pointer;transition:.15s;user-select:none}
   .btn:hover{transform:translateY(-1px);box-shadow:0 4px 18px #0007}
   .btn:active{transform:translateY(0)}
-  .btn.accent{background:linear-gradient(135deg,#173552,#0f2642);border-color:#224469}
   .toggle{display:inline-flex;align-items:center;gap:8px}
   .toggle input{appearance:none;width:42px;height:24px;border-radius:999px;background:#1a2945;position:relative;outline:none;border:1px solid #27406a;cursor:pointer}
   .toggle input:checked{background:linear-gradient(90deg,#0fa3b1,#14cba8)}
@@ -39,7 +37,7 @@
   .dial input[type=range]{width:220px}
   .note{font-size:12px;color:#9bb2da}
   .legend{position:absolute;left:10px;bottom:10px;font-size:12px;color:var(--muted);background:#07101caa;padding:6px 8px;border-radius:8px;border:1px solid #122341}
-  #toast{position:fixed;right:14px;bottom:14px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:10px;color:var(--ink);opacity:0;transform:translateY(8px);transition:.25s}
+  #toast{position:fixed;left:14px;bottom:14px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:10px;color:var(--ink);opacity:0;transform:translateY(8px);transition:.25s}
   #toast.show{opacity:1;transform:translateY(0)}
   .kbd{border:1px solid #2a3f64;background:#0e1a30;border-radius:6px;padding:.05rem .35rem;font-size:12px;color:var(--muted)}
   canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
@@ -49,7 +47,7 @@
 <div id="app">
   <header>
     <h1>🌌 Pocket Planetarium</h1>
-    <span class="chip">v1.3</span>
+    <span class="chip">v1.4 (Hardened)</span>
     <span class="pill">Zoom <span id="zoomRead">1.0×</span></span>
     <span class="pill">FOV <span id="fovRead">180°</span></span>
     <span class="pill">Lat <span id="latRead">—</span></span>
@@ -59,15 +57,15 @@
   <aside id="left" class="panel">
     <h3>Where &amp; When</h3>
     <div class="row">
-      <div class="field"><label>Latitude (°)</label><input id="lat" type="number" step="0.0001" value="33.422" /></div>
-      <div class="field"><label>Longitude (°)</label><input id="lon" type="number" step="0.0001" value="-111.822" /></div>
+      <div class="field"><label for="lat">Latitude (°)</label><input id="lat" type="number" step="0.0001" value="33.422" /></div>
+      <div class="field"><label for="lon">Longitude (°)</label><input id="lon" type="number" step="0.0001" value="-111.822" /></div>
     </div>
     <div class="row">
-      <div class="field"><label>Date</label><input id="date" type="date"/></div>
-      <div class="field"><label>Time (local)</label><input id="time" type="time" step="1"/></div>
+      <div class="field"><label for="date">Date</label><input id="date" type="date"/></div>
+      <div class="field"><label for="time">Time (local)</label><input id="time" type="time" step="1"/></div>
     </div>
     <div class="row">
-      <button class="btn accent" id="btnNow">Now</button>
+      <button class="btn" id="btnNow">Now</button>
       <button class="btn" id="btnGeo">Use My Location</button>
       <select id="presets" class="btn">
         <option value="">Presets…</option>
@@ -130,13 +128,21 @@
     <button class="btn" id="resetView">Reset View</button>
     <span class="note">Projection: fisheye all-sky (zenith at center)</span>
     <span style="flex:1"></span>
-    <span class="note">Positions are approximate (demo), planets good to ~1–2°.</span>
+    <span class="note">If anything goes wrong, errors will appear in a toast.</span>
   </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
+/* ===== Global error reporting to toast ===== */
+window.onerror = function(msg, src, line, col, err){
+  const el=document.getElementById('toast');
+  el.textContent = 'Error: ' + msg;
+  el.className='show';
+  setTimeout(()=>el.className='', 6000);
+};
+
 /* ===================== Utilities ===================== */
 const DEG = Math.PI/180, RAD = 180/Math.PI;
 const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
@@ -159,7 +165,7 @@ function hmsFromRad(alpha){
   const h = mod(alpha,2*Math.PI)*12/Math.PI;
   const hh = Math.floor(h);
   const mm = Math.floor((h-hh)*60);
-  return \`\${hh.toString().padStart(2,'0')}:\${mm.toString().padStart(2,'0')}\`;
+  return `${hh.toString().padStart(2,'0')}:${mm.toString().padStart(2,'0')}`;
 }
 
 function azAltFromRADec(ra, dec, lat, lstRad){
@@ -197,7 +203,7 @@ function planetPositionEcliptic(name, jd){
   const a=p.a, e=p.e, I=(p.I+0*T)*DEG, L=(p.L+36000.770*T)*DEG, lp=(p.lp+0*T)*DEG, o=(p.o+0*T)*DEG;
   const M = mod(L - lp, 2*Math.PI);
   let E = M;
-  for(let i=0;i<5;i++){ E = M + e*Math.sin(E); }
+  for(let i=0;i<6;i++){ E = M + e*Math.sin(E); }
   const nu = 2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2));
   const r = a*(1-e*Math.cos(E));
   const xh = r*(Math.cos(o)*Math.cos(nu+lp-o) - Math.sin(o)*Math.sin(nu+lp-o)*Math.cos(I));
@@ -215,73 +221,25 @@ function geocentricEquatorial(name, jd){
   const ze = y*Math.sin(eps) + z*Math.cos(eps);
   const ra = mod(Math.atan2(ye, xe), 2*Math.PI);
   const dec = Math.atan2(ze, Math.hypot(xe,ye));
-  const dist = Math.sqrt(x*x + y*y + z*z);
-  return {ra, dec, dist};
+  return {ra, dec};
 }
 
-/* ===================== Procedural Stars ===================== */
-function seededRandom(seed){
-  let t = seed>>>0;
-  return function(){
-    t = (t + 0x6D2B79F5) | 0;
-    let r = Math.imul(t ^ (t>>>15), 1 | t);
-    r ^= r + Math.imul(r ^ (r>>>7), 61 | r);
-    return ((r ^ (r>>>14)) >>> 0) / 4294967296;
-  }
-}
+/* ===================== Stars & Messier ===================== */
+function seededRandom(seed){ let t=seed>>>0; return function(){ t=(t+0x6D2B79F5)|0; let r=Math.imul(t^(t>>>15),1|t); r^=r+Math.imul(r^(r>>>7),61|r); return ((r^(r>>>14))>>>0)/4294967296; };}
 function makeStars(n=6000, seed=2025){
-  const rnd = seededRandom(seed);
-  const out=[];
-  for(let i=0;i<n;i++){
-    const u = rnd(), v = rnd(), w = rnd();
-    const ra = 2*Math.PI*u;
-    const x = Math.acos(1 - 2*v) - Math.PI/2;
-    const bias = 0.35*Math.sin(ra*0.5) + 0.45*Math.sin((ra+1.2)*1.0);
-    const dec = clamp(x + bias*DEG*15, -Math.PI/2, Math.PI/2);
-    const mag = 1.5 + -2*Math.log10(0.02 + w*w);
-    out.push({ra, dec, mag});
-  }
-  return out;
+  const rnd=seededRandom(seed), out=[];
+  for(let i=0;i<n;i++){ const u=rnd(), v=rnd(), w=rnd(); const ra=2*Math.PI*u; const x=Math.acos(1-2*v)-Math.PI/2; const bias=0.35*Math.sin(ra*0.5)+0.45*Math.sin((ra+1.2)*1.0); const dec=clamp(x+bias*DEG*15,-Math.PI/2,Math.PI/2); const mag=1.5 + -2*Math.log10(0.02+w*w); out.push({ra,dec,mag}); } return out;
 }
 const stars = makeStars();
-
-/* ===================== Messier objects (~30 popular) ===================== */
 function raRad(h,m){ return ((h*15)+(m*0.25))*DEG; }
 const MESSIER = [
-  {n:'M1 Crab',h:5,m:34, d:22.0},
-  {n:'M3',h:13,m:42, d:28.4},
-  {n:'M4',h:16,m:23, d:-26.5},
-  {n:'M5',h:15,m:18, d:2.1},
-  {n:'M8 Lagoon',h:18,m:3, d:-24.4},
-  {n:'M11 Wild Duck',h:18,m:51, d:-6.3},
-  {n:'M13 Hercules',h:16,m:41, d:36.5},
-  {n:'M15',h:21,m:30, d:12.2},
-  {n:'M16 Eagle',h:18,m:19, d:-13.8},
-  {n:'M17 Swan',h:18,m:20, d:-16.2},
-  {n:'M20 Trifid',h:18,m:2, d:-23.0},
-  {n:'M27 Dumbbell',h:20,m:0, d:22.7},
-  {n:'M31 Andromeda',h:0,m:42, d:41.3},
-  {n:'M32',h:0,m:43, d:40.9},
-  {n:'M33 Triangulum',h:1,m:33, d:30.7},
-  {n:'M34',h:2,m:42, d:42.8},
-  {n:'M35',h:6,m:9, d:24.3},
-  {n:'M36',h:5,m:36, d:34.1},
-  {n:'M37',h:5,m:52, d:32.3},
-  {n:'M38',h:5,m:29, d:35.8},
-  {n:'M39',h:21,m:32, d:48.4},
-  {n:'M41',h:6,m:46, d:-20.7},
-  {n:'M42 Orion',h:5,m:35, d:-5.5},
-  {n:'M44 Beehive',h:8,m:40, d:19.7},
-  {n:'M45 Pleiades',h:3,m:47, d:24.1},
-  {n:'M51 Whirlpool',h:13,m:30, d:47.2},
-  {n:'M57 Ring',h:18,m:53, d:33.0},
-  {n:'M65',h:11,m:19, d:13.1},
-  {n:'M66',h:11,m:20, d:12.99},
-  {n:'M81',h:9,m:55, d:69.1},
-  {n:'M82',h:9,m:56, d:69.7},
-  {n:'M92',h:17,m:17, d:43.1},
-  {n:'M101 Pinwheel',h:14,m:3, d:54.3},
-  {n:'M104 Sombrero',h:12,m:40, d:-11.6}
+  {n:'M31 Andromeda',h:0,m:42, d:41.3},{n:'M42 Orion',h:5,m:35, d:-5.5},{n:'M45 Pleiades',h:3,m:47, d:24.1},
+  {n:'M13 Hercules',h:16,m:41, d:36.5},{n:'M8 Lagoon',h:18,m:3, d:-24.4},{n:'M20 Trifid',h:18,m:2, d:-23.0},
+  {n:'M17 Swan',h:18,m:20, d:-16.2},{n:'M16 Eagle',h:18,m:19, d:-13.8},{n:'M27 Dumbbell',h:20,m:0, d:22.7},
+  {n:'M57 Ring',h:18,m:53, d:33.0},{n:'M51 Whirlpool',h:13,m:30, d:47.2},{n:'M44 Beehive',h:8,m:40, d:19.7},
+  {n:'M1 Crab',h:5,m:34, d:22.0},{n:'M3',h:13,m:42, d:28.4},{n:'M4',h:16,m:23, d:-26.5},
+  {n:'M33 Triangulum',h:1,m:33, d:30.7},{n:'M36',h:5,m:36, d:34.1},{n:'M37',h:5,m:52, d:32.3},
+  {n:'M38',h:5,m:29, d:35.8},{n:'M39',h:21,m:32, d:48.4},{n:'M104 Sombrero',h:12,m:40, d:-11.6}
 ].map(o=>({name:o.n, ra:raRad(o.h,o.m), dec:o.d*DEG}));
 
 /* ===================== Drawing + Projection ===================== */
@@ -299,9 +257,10 @@ let yaw=0, pitch=0;
 let mirror=false, showLabels=true, showGrid=true, showEcliptic=true, showMW=true, showMessier=true, showPlanets=true;
 
 function resize(){
-  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+  const dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio||1));
   W = Math.max(1, wrap.clientWidth);
   H = Math.max(1, wrap.clientHeight);
+  if(H < 120){ H = Math.max(400, Math.floor(window.innerHeight * 0.6)); wrap.style.minHeight = H + "px"; }
   R = Math.min(W,H)/2;
   sky.width = Math.floor(W*dpr);
   sky.height = Math.floor(H*dpr);
@@ -317,15 +276,15 @@ function resize(){
 }
 
 function project(az, alt){
-  let theta = (Math.PI/2 - alt);
+  const theta = (Math.PI/2 - alt);
   const maxTheta = fov/2;
   if(theta>maxTheta) return null;
-  let r = (theta/maxTheta) * R * scale;
+  const r = (theta/maxTheta) * R * scale;
   let x = r*Math.sin(az + yaw);
   let y = -r*Math.cos(az + yaw);
   const c = Math.cos(pitch);
   const yy = y*c;
-  x = mirror ? -x : x;
+  if(mirror) x = -x;
   return {x:W/2 + x, y:H/2 + yy, r};
 }
 
@@ -364,7 +323,7 @@ function drawGrid(lstRad){
     if(p1 && p2){
       ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
       ctx.fillStyle="#7ea1d6"; ctx.font="11px system-ui";
-      ctx.fillText(\`\${az}°\`, p1.x+4, p1.y+4);
+      ctx.fillText(`${az}°`, p1.x+4, p1.y+4);
     }
   }
 }
@@ -444,7 +403,7 @@ function drawPlanets(){
     const p=project(az,alt); if(!p) continue;
     ctx.fillStyle = PLANETS.find(x=>x.name===pl).color;
     ctx.beginPath(); ctx.arc(p.x,p.y,3.8,0,2*Math.PI); ctx.fill();
-    if(showLabels){ ctx.fillText(\`◍ \${pl}\`, p.x+6, p.y-6); }
+    if(showLabels){ ctx.fillText(`◍ ${pl}`, p.x+6, p.y-6); }
   }
   ctx.restore();
 }
@@ -474,11 +433,14 @@ function toast(msg, t=1600){
   setTimeout(()=>el.className='', t);
 }
 function setNow(){
-  time = new Date();
+  // Force-render and populate inputs reliably
+  const now = new Date();
+  time = new Date(now.getTime());
   const d=document.getElementById('date'), ti=document.getElementById('time');
   const pad=n=>n.toString().padStart(2,'0');
-  d.value = \`\${time.getFullYear()}-\${pad(time.getMonth()+1)}-\${pad(time.getDate())}\`;
-  ti.value = \`\${pad(time.getHours())}:\${pad(time.getMinutes())}:\${pad(time.getSeconds())}\`;
+  d.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  ti.value = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  toast("Jumped to now");
 }
 function fromInputs(){
   const d=document.getElementById('date').value;
@@ -493,13 +455,13 @@ function fromInputs(){
   lat = parseFloat(document.getElementById('lat').value || "33.422")*DEG;
   draw();
 }
-document.getElementById('btnNow').onclick = ()=>{ setNow(); draw(); toast("Jumped to now"); };
+document.getElementById('btnNow').onclick = ()=>{ setNow(); draw(); };
 document.getElementById('btnGeo').onclick = ()=>{
   if(!navigator.geolocation){ toast("Geolocation not supported"); return; }
   navigator.geolocation.getCurrentPosition(p=>{
     document.getElementById('lat').value = p.coords.latitude.toFixed(6);
     document.getElementById('lon').value = p.coords.longitude.toFixed(6);
-    fromInputs(); toast("Location set");
+    fromInputs();
   }, _=> toast("Couldn't get location"));
 };
 document.getElementById('presets').onchange = (e)=>{
@@ -555,8 +517,8 @@ function tick(){
     time = new Date(time.getTime() + 1000*rate/60);
     if(Math.floor(performance.now()/1000)%1===0){
       const pad=n=>n.toString().padStart(2,'0');
-      document.getElementById('time').value = \`\${pad(time.getHours())}:\${pad(time.getMinutes())}:\${pad(time.getSeconds())}\`;
-      document.getElementById('date').value = \`\${time.getFullYear()}-\${pad(time.getMonth()+1)}-\${pad(time.getDate())}\`;
+      document.getElementById('time').value = `${pad(time.getHours())}:${pad(time.getMinutes())}:${pad(time.getSeconds())}`;
+      document.getElementById('date').value = `${time.getFullYear()}-${pad(time.getMonth()+1)}-${pad(time.getDate())}`;
     }
   }
   draw();
@@ -566,8 +528,8 @@ function tick(){
 /* ===================== Init ===================== */
 function init(){
   setNow();
-  // robust sizing: double RAF + ResizeObserver
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  // robust sizing: triple RAF + ResizeObserver + fallback timeout
+  requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
     resize();
     if('ResizeObserver' in window){
       const ro = new ResizeObserver(resize);
@@ -575,7 +537,9 @@ function init(){
     }else{
       window.addEventListener('resize', resize);
     }
-  }));
+    // safety: if canvas is still tiny after 800ms, force another resize
+    setTimeout(()=>resize(), 800);
+  })));
   tick();
 }
 init();
