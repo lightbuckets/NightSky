@@ -3,38 +3,61 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.2 (Diagnostic)</title>
+<title>Pocket Planetarium — v1.3 (Planets + Messier)</title>
 <style>
-  :root{ --edge:#172744; --ink:#e6efff; --muted:#9bb0d7; }
-  html,body{height:100%;margin:0;background:#06101c;color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
-  #app{display:grid;grid-template-rows:64px 1fr 84px;grid-template-columns:320px 1fr;gap:10px;height:100%;padding:10px;box-sizing:border-box}
-  header{grid-column:1/-1;display:flex;align-items:center;gap:8px}
-  header h1{font-size:18px;margin:0 8px 0 0;font-weight:800}
+  :root{
+    --bg:#0b0f17; --panel:#101827; --ink:#e6efff; --muted:#9bb0d7;
+    --accent:#78e3ff; --accent2:#a0ffcf; --warn:#ffcc66;
+    --grid:#233a63; --edge:#172744;
+  }
+  html,body{height:100%;margin:0;background:radial-gradient(1400px 900px at 68% 18%, #0f1d35 0%, #0b0f17 60%, #070a11 100%);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
+  #app{display:grid;grid-template-rows:64px 1fr 84px;grid-template-columns:340px 1fr;gap:10px;height:100%;padding:10px;box-sizing:border-box}
+  header{grid-column:1/-1;display:flex;align-items:center;gap:10px}
+  header h1{font-size:18px;margin:0 8px 0 0;font-weight:800;letter-spacing:.2px}
+  .chip{padding:.25rem .55rem;border-radius:999px;background:#12233f;color:var(--muted);font-size:12px;border:1px solid #23416b}
   .pill{display:inline-flex;align-items:center;gap:6px;padding:.2rem .5rem;border:1px solid #23416b;border-radius:999px;color:var(--muted);font-size:12px}
-  #left{grid-row:2/4;grid-column:1;background:#0b1527;border:1px solid var(--edge);border-radius:12px;padding:10px;overflow:auto}
-  #canvasWrap{grid-row:2;grid-column:2;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--edge);background:#02060d;min-height:520px}
+  #left{grid-row:2/4;grid-column:1;background:linear-gradient(180deg,#0f1626,#0c1320);border:1px solid var(--edge);border-radius:12px;padding:10px;overflow:auto}
+  #canvasWrap{grid-row:2;grid-column:2;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--edge);background:radial-gradient(900px 650px at 50% 50%, #08111c 0%, #060a12 70%, #04070c 100%);min-height:480px}
   #sky{width:100%;height:100%;display:block;cursor:grab}
   #overlay{position:absolute;inset:0;pointer-events:none}
-  #bottom{grid-row:3;grid-column:2;display:flex;align-items:center;gap:12px;background:#0b1527;border:1px solid var(--edge);border-radius:12px;padding:10px}
+  #bottom{grid-row:3;grid-column:2;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#0f1626,#0c1320);border:1px solid var(--edge);border-radius:12px;padding:10px}
+  .panel h3{margin:.4rem 0 .5rem 0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:.35rem 0}
   .field{display:flex;flex-direction:column;gap:4px;min-width:136px}
   .field label{font-size:12px;color:var(--muted)}
   .field input,.field select{background:#0b1324;border:1px solid #1b2a47;color:var(--ink);border-radius:8px;padding:.45rem .6rem;font-size:14px;outline:none}
-  .btn{background:#13213a;border:1px solid #1b2a47;color:var(--ink);padding:.48rem .72rem;border-radius:10px;font-weight:700;cursor:pointer}
+  .btn{background:#13213a;border:1px solid #1b2a47;color:var(--ink);padding:.48rem .72rem;border-radius:10px;font-weight:700;cursor:pointer;transition:.15s;user-select:none}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 4px 18px #0007}
+  .btn:active{transform:translateY(0)}
+  .btn.accent{background:linear-gradient(135deg,#173552,#0f2642);border-color:#224469}
+  .toggle{display:inline-flex;align-items:center;gap:8px}
+  .toggle input{appearance:none;width:42px;height:24px;border-radius:999px;background:#1a2945;position:relative;outline:none;border:1px solid #27406a;cursor:pointer}
+  .toggle input:checked{background:linear-gradient(90deg,#0fa3b1,#14cba8)}
+  .toggle input::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#eaf7ff;top:2.5px;left:3px;transition:.2s}
+  .toggle input:checked::after{left:21px}
+  .dial{display:flex;align-items:center;gap:10px}
+  .dial input[type=range]{width:220px}
   .note{font-size:12px;color:#9bb2da}
+  .legend{position:absolute;left:10px;bottom:10px;font-size:12px;color:var(--muted);background:#07101caa;padding:6px 8px;border-radius:8px;border:1px solid #122341}
+  #toast{position:fixed;right:14px;bottom:14px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:10px;color:var(--ink);opacity:0;transform:translateY(8px);transition:.25s}
+  #toast.show{opacity:1;transform:translateY(0)}
+  .kbd{border:1px solid #2a3f64;background:#0e1a30;border-radius:6px;padding:.05rem .35rem;font-size:12px;color:var(--muted)}
+  canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
     <h1>🌌 Pocket Planetarium</h1>
-    <span class="pill">v1.2 Diagnostic</span>
-    <span class="pill">W×H <span id="wh">—</span></span>
-    <span class="pill">JD <span id="jdRead">—</span></span>
+    <span class="chip">v1.3</span>
+    <span class="pill">Zoom <span id="zoomRead">1.0×</span></span>
+    <span class="pill">FOV <span id="fovRead">180°</span></span>
+    <span class="pill">Lat <span id="latRead">—</span></span>
+    <span class="pill">LST <span id="lstRead">—</span></span>
   </header>
 
-  <aside id="left">
-    <h3>Where & When</h3>
+  <aside id="left" class="panel">
+    <h3>Where &amp; When</h3>
     <div class="row">
       <div class="field"><label>Latitude (°)</label><input id="lat" type="number" step="0.0001" value="33.422" /></div>
       <div class="field"><label>Longitude (°)</label><input id="lon" type="number" step="0.0001" value="-111.822" /></div>
@@ -44,143 +67,516 @@
       <div class="field"><label>Time (local)</label><input id="time" type="time" step="1"/></div>
     </div>
     <div class="row">
-      <button class="btn" id="btnNow">Now</button>
+      <button class="btn accent" id="btnNow">Now</button>
       <button class="btn" id="btnGeo">Use My Location</button>
-      <button class="btn" id="btnTest">Force Draw Test</button>
+      <select id="presets" class="btn">
+        <option value="">Presets…</option>
+        <option value="33.422,-111.822">Mesa, AZ</option>
+        <option value="19.826,-155.470">Mauna Kea</option>
+        <option value="51.477,0.000">Greenwich</option>
+        <option value="-33.868,151.209">Sydney</option>
+        <option value="28.300,-16.509">Teide</option>
+      </select>
+    </div>
+
+    <h3>View</h3>
+    <div class="row dial">
+      <span class="note">Zoom</span>
+      <input type="range" id="zoom" min="0.6" max="3.0" step="0.01" value="1.0"/>
+      <span class="note">FOV</span>
+      <input type="range" id="fov" min="80" max="200" step="1" value="180"/>
     </div>
     <div class="row">
-      <label><input id="grid" type="checkbox" checked/> Grid</label>
-      <label><input id="ecliptic" type="checkbox" checked/> Ecliptic</label>
-      <label><input id="planets" type="checkbox" checked/> Planets</label>
-      <label><input id="dso" type="checkbox" checked/> DSOs</label>
+      <label class="toggle"><input id="flip" type="checkbox" /><span>Mirror (planetarium)</span></label>
+      <label class="toggle"><input id="labels" type="checkbox" checked/><span>Labels</span></label>
+      <label class="toggle"><input id="grid" type="checkbox" checked/><span>Az/Alt grid</span></label>
+      <label class="toggle"><input id="ecliptic" type="checkbox" checked/><span>Ecliptic</span></label>
+      <label class="toggle"><input id="mw" type="checkbox" checked/><span>Milky Way glow</span></label>
+      <label class="toggle"><input id="messier" type="checkbox" checked/><span>Messier objects</span></label>
+      <label class="toggle"><input id="planets" type="checkbox" checked/><span>Planets</span></label>
     </div>
-    <p class="note">If you see a big white crosshair & “HELLO SKY” text in the canvas, rendering works.</p>
+
+    <h3>Time Flow</h3>
+    <div class="row">
+      <button id="play" class="btn">▶ Play</button>
+      <select id="rate" class="btn">
+        <option value="60">+1 min / sec</option>
+        <option value="300">+5 min / sec</option>
+        <option value="900">+15 min / sec</option>
+        <option value="3600">+1 hr / sec</option>
+      </select>
+      <button id="rew" class="btn">⏮︎ -1 hr</button>
+      <button id="ff" class="btn">⏭︎ +1 hr</button>
+    </div>
+
+    <h3>Tips</h3>
+    <div class="row" style="line-height:1.4">
+      <span class="note">Drag to pan • <span class="kbd">Scroll</span> to zoom • <span class="kbd">Shift + Drag</span> to rotate view • <span class="kbd">D</span> toggles labels</span>
+    </div>
   </aside>
 
   <div id="canvasWrap">
     <canvas id="sky"></canvas>
     <canvas id="overlay"></canvas>
+    <div class="legend">
+      <div><strong>Legend:</strong> ● star, ◍ planet, ⌾ Messier object</div>
+      <div>Horizon = circle edge • North ↑</div>
+    </div>
   </div>
 
   <div id="bottom">
+    <button class="btn" id="northBtn">Face North</button>
+    <button class="btn" id="zenithBtn">Zenith Up</button>
     <button class="btn" id="resetView">Reset View</button>
-    <span class="note" id="status">status: —</span>
+    <span class="note">Projection: fisheye all-sky (zenith at center)</span>
+    <span style="flex:1"></span>
+    <span class="note">Positions are approximate (demo), planets good to ~1–2°.</span>
   </div>
 </div>
 
-<script>
-const DEG=Math.PI/180,RAD=180/Math.PI; const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)); const mod=(x,m)=>((x%m)+m)%m;
-function jdFromDate(d){return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),d.getUTCHours(),d.getUTCMinutes(),d.getUTCSeconds())/86400000+2440587.5;}
-function gmst(jd){const T=(jd-2451545)/36525; let s=67310.54841+(876600*3600+8640184.812866)*T+0.093104*T*T-6.2e-6*T*T*T; return mod(s,86400)/240*DEG;}
-function lst(jd,lon){return mod(gmst(jd)+lon,2*Math.PI);}
-function azAltFromRADec(ra,dec,lat,L){const H=mod(L-ra,2*Math.PI);const s=Math.sin(dec)*Math.sin(lat)+Math.cos(dec)*Math.cos(lat)*Math.cos(H);const alt=Math.asin(clamp(s,-1,1));const c=(Math.sin(dec)-Math.sin(alt)*Math.sin(lat))/(Math.cos(alt)*Math.cos(lat));let az=Math.acos(clamp(c,-1,1)); if(Math.sin(H)>0) az=2*Math.PI-az; return {az,alt};}
+<div id="toast"></div>
 
-const sky=document.getElementById('sky'), ol=document.getElementById('overlay'), wrap=document.getElementById('canvasWrap');
-const ctx=sky.getContext('2d'), octx=ol.getContext('2d');
-let W=0,H=0,R=0,scale=1,fov=180*DEG, yaw=0,pitch=0; let lat=33.422*DEG, lon=-111.822*DEG; let time=new Date();
-let showGrid=true, showEcliptic=true, showDSO=true, showPlanets=true;
-let currentJD=0,currentLST=0;
+<script>
+/* ===================== Utilities ===================== */
+const DEG = Math.PI/180, RAD = 180/Math.PI;
+const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+const mod = (x,m)=>((x%m)+m)%m;
+
+function jdFromDate(date){
+  const t = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(),
+                     date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds())/86400000 + 2440587.5;
+  return t;
+}
+function gmst(jd){
+  const T = (jd - 2451545.0)/36525.0;
+  let gmst = 67310.54841 + (876600*3600 + 8640184.812866)*T + 0.093104*T*T - 6.2e-6*T*T*T;
+  gmst = mod(gmst, 86400)/240.0;
+  return gmst*DEG;
+}
+function lst(jd, lonRad){ return mod(gmst(jd) + lonRad, 2*Math.PI); }
+
+function hmsFromRad(alpha){
+  const h = mod(alpha,2*Math.PI)*12/Math.PI;
+  const hh = Math.floor(h);
+  const mm = Math.floor((h-hh)*60);
+  return \`\${hh.toString().padStart(2,'0')}:\${mm.toString().padStart(2,'0')}\`;
+}
+
+function azAltFromRADec(ra, dec, lat, lstRad){
+  const H = mod(lstRad - ra, 2*Math.PI);
+  const sinAlt = Math.sin(dec)*Math.sin(lat)+Math.cos(dec)*Math.cos(lat)*Math.cos(H);
+  const alt = Math.asin(clamp(sinAlt,-1,1));
+  const cosAz = (Math.sin(dec)-Math.sin(alt)*Math.sin(lat))/(Math.cos(alt)*Math.cos(lat));
+  let az = Math.acos(clamp(cosAz,-1,1));
+  if(Math.sin(H)>0) az = 2*Math.PI - az;
+  return {az, alt};
+}
+function radecFromEcliptic(lam, beta){
+  const eps = 23.43928*DEG;
+  const sinDec = Math.sin(beta)*Math.cos(eps)+Math.cos(beta)*Math.sin(eps)*Math.sin(lam);
+  const dec = Math.asin(clamp(sinDec,-1,1));
+  const y = Math.sin(lam)*Math.cos(eps)-Math.tan(beta)*Math.sin(eps);
+  const x = Math.cos(lam);
+  let ra = Math.atan2(y,x);
+  ra = mod(ra, 2*Math.PI);
+  return {ra, dec};
+}
+
+/* ===================== Simplified planets ===================== */
+const PLANETS = [
+  { name:"Mercury", color:"#a7d0ff", R:2.6,  a:0.38709927, e:0.20563593, I:7.00497902, L:252.25032350, lp:77.45779628, o:48.33076593 },
+  { name:"Venus",   color:"#ffe6a3", R:3.0,  a:0.72333566, e:0.00677672, I:3.39467605, L:181.97909950, lp:131.60246718,o:76.67984255 },
+  { name:"Earth",   color:"#9be7ff", R:3.3,  a:1.00000261, e:0.01671123, I:-0.00001531,L:100.46457166, lp:102.93768193,o:0.0 },
+  { name:"Mars",    color:"#ffb18a", R:3.0,  a:1.52371034, e:0.09339410, I:1.84969142, L:-4.55343205, lp:-23.94362959,o:49.55953891 },
+  { name:"Jupiter", color:"#fff0b3", R:4.2,  a:5.20288700, e:0.04838624, I:1.30439695, L:34.39644051, lp:14.72847983, o:100.47390909 },
+  { name:"Saturn",  color:"#ffeec7", R:4.0,  a:9.53667594, e:0.05386179, I:2.48599187, L:49.95424423, lp:92.59887831, o:113.66242448 },
+];
+function planetPositionEcliptic(name, jd){
+  const T = (jd-2451545.0)/36525.0;
+  const p = PLANETS.find(p=>p.name===name);
+  const a=p.a, e=p.e, I=(p.I+0*T)*DEG, L=(p.L+36000.770*T)*DEG, lp=(p.lp+0*T)*DEG, o=(p.o+0*T)*DEG;
+  const M = mod(L - lp, 2*Math.PI);
+  let E = M;
+  for(let i=0;i<5;i++){ E = M + e*Math.sin(E); }
+  const nu = 2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2));
+  const r = a*(1-e*Math.cos(E));
+  const xh = r*(Math.cos(o)*Math.cos(nu+lp-o) - Math.sin(o)*Math.sin(nu+lp-o)*Math.cos(I));
+  const yh = r*(Math.sin(o)*Math.cos(nu+lp-o) + Math.cos(o)*Math.sin(nu+lp-o)*Math.cos(I));
+  const zh = r*(Math.sin(nu+lp-o)*Math.sin(I));
+  return {x:xh, y:yh, z:zh};
+}
+function geocentricEquatorial(name, jd){
+  const eps = 23.43928*DEG;
+  const earth = planetPositionEcliptic("Earth", jd);
+  const pt = planetPositionEcliptic(name, jd);
+  const x = pt.x - earth.x, y = pt.y - earth.y, z = pt.z - earth.z;
+  const xe = x;
+  const ye = y*Math.cos(eps) - z*Math.sin(eps);
+  const ze = y*Math.sin(eps) + z*Math.cos(eps);
+  const ra = mod(Math.atan2(ye, xe), 2*Math.PI);
+  const dec = Math.atan2(ze, Math.hypot(xe,ye));
+  const dist = Math.sqrt(x*x + y*y + z*z);
+  return {ra, dec, dist};
+}
+
+/* ===================== Procedural Stars ===================== */
+function seededRandom(seed){
+  let t = seed>>>0;
+  return function(){
+    t = (t + 0x6D2B79F5) | 0;
+    let r = Math.imul(t ^ (t>>>15), 1 | t);
+    r ^= r + Math.imul(r ^ (r>>>7), 61 | r);
+    return ((r ^ (r>>>14)) >>> 0) / 4294967296;
+  }
+}
+function makeStars(n=6000, seed=2025){
+  const rnd = seededRandom(seed);
+  const out=[];
+  for(let i=0;i<n;i++){
+    const u = rnd(), v = rnd(), w = rnd();
+    const ra = 2*Math.PI*u;
+    const x = Math.acos(1 - 2*v) - Math.PI/2;
+    const bias = 0.35*Math.sin(ra*0.5) + 0.45*Math.sin((ra+1.2)*1.0);
+    const dec = clamp(x + bias*DEG*15, -Math.PI/2, Math.PI/2);
+    const mag = 1.5 + -2*Math.log10(0.02 + w*w);
+    out.push({ra, dec, mag});
+  }
+  return out;
+}
+const stars = makeStars();
+
+/* ===================== Messier objects (~30 popular) ===================== */
+function raRad(h,m){ return ((h*15)+(m*0.25))*DEG; }
+const MESSIER = [
+  {n:'M1 Crab',h:5,m:34, d:22.0},
+  {n:'M3',h:13,m:42, d:28.4},
+  {n:'M4',h:16,m:23, d:-26.5},
+  {n:'M5',h:15,m:18, d:2.1},
+  {n:'M8 Lagoon',h:18,m:3, d:-24.4},
+  {n:'M11 Wild Duck',h:18,m:51, d:-6.3},
+  {n:'M13 Hercules',h:16,m:41, d:36.5},
+  {n:'M15',h:21,m:30, d:12.2},
+  {n:'M16 Eagle',h:18,m:19, d:-13.8},
+  {n:'M17 Swan',h:18,m:20, d:-16.2},
+  {n:'M20 Trifid',h:18,m:2, d:-23.0},
+  {n:'M27 Dumbbell',h:20,m:0, d:22.7},
+  {n:'M31 Andromeda',h:0,m:42, d:41.3},
+  {n:'M32',h:0,m:43, d:40.9},
+  {n:'M33 Triangulum',h:1,m:33, d:30.7},
+  {n:'M34',h:2,m:42, d:42.8},
+  {n:'M35',h:6,m:9, d:24.3},
+  {n:'M36',h:5,m:36, d:34.1},
+  {n:'M37',h:5,m:52, d:32.3},
+  {n:'M38',h:5,m:29, d:35.8},
+  {n:'M39',h:21,m:32, d:48.4},
+  {n:'M41',h:6,m:46, d:-20.7},
+  {n:'M42 Orion',h:5,m:35, d:-5.5},
+  {n:'M44 Beehive',h:8,m:40, d:19.7},
+  {n:'M45 Pleiades',h:3,m:47, d:24.1},
+  {n:'M51 Whirlpool',h:13,m:30, d:47.2},
+  {n:'M57 Ring',h:18,m:53, d:33.0},
+  {n:'M65',h:11,m:19, d:13.1},
+  {n:'M66',h:11,m:20, d:12.99},
+  {n:'M81',h:9,m:55, d:69.1},
+  {n:'M82',h:9,m:56, d:69.7},
+  {n:'M92',h:17,m:17, d:43.1},
+  {n:'M101 Pinwheel',h:14,m:3, d:54.3},
+  {n:'M104 Sombrero',h:12,m:40, d:-11.6}
+].map(o=>({name:o.n, ra:raRad(o.h,o.m), dec:o.d*DEG}));
+
+/* ===================== Drawing + Projection ===================== */
+const sky = document.getElementById('sky');
+const ol = document.getElementById('overlay');
+const wrap = document.getElementById('canvasWrap');
+const ctx = sky.getContext('2d');
+const octx = ol.getContext('2d');
+
+let W=0,H=0, R=0, scale=1, fov=180*DEG;
+let lat = 33.422*DEG, lon = -111.822*DEG;
+let time = new Date();
+let dragging=false, rotating=false, lastX=0, lastY=0;
+let yaw=0, pitch=0;
+let mirror=false, showLabels=true, showGrid=true, showEcliptic=true, showMW=true, showMessier=true, showPlanets=true;
 
 function resize(){
-  const dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
-  W=Math.max(1,wrap.clientWidth); H=Math.max(1,wrap.clientHeight); if(H<100){H=520; wrap.style.minHeight='520px';}
-  R=Math.min(W,H)/2;
-  sky.width=W*dpr; sky.height=H*dpr; ol.width=W*dpr; ol.height=H*dpr;
-  sky.style.width=W+'px'; sky.style.height=H+'px'; ol.style.width=W+'px'; ol.style.height=H+'px';
-  ctx.setTransform(dpr,0,0,dpr,0,0); octx.setTransform(dpr,0,0,dpr,0,0);
-  document.getElementById('wh').textContent=W+'×'+H;
-  draw(true);
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+  W = Math.max(1, wrap.clientWidth);
+  H = Math.max(1, wrap.clientHeight);
+  R = Math.min(W,H)/2;
+  sky.width = Math.floor(W*dpr);
+  sky.height = Math.floor(H*dpr);
+  ol.width = sky.width;
+  ol.height = sky.height;
+  sky.style.width = W + "px";
+  sky.style.height = H + "px";
+  ol.style.width = W + "px";
+  ol.style.height = H + "px";
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  octx.setTransform(dpr,0,0,dpr,0,0);
+  draw();
 }
 
-function project(az,alt){
-  const theta=(Math.PI/2-alt), maxTheta=fov/2;
+function project(az, alt){
+  let theta = (Math.PI/2 - alt);
+  const maxTheta = fov/2;
   if(theta>maxTheta) return null;
-  const r=(theta/maxTheta)*R*scale;
-  let x=r*Math.sin(az+yaw), y=-r*Math.cos(az+yaw);
-  return {x:W/2+x, y:H/2+y, r};
+  let r = (theta/maxTheta) * R * scale;
+  let x = r*Math.sin(az + yaw);
+  let y = -r*Math.cos(az + yaw);
+  const c = Math.cos(pitch);
+  const yy = y*c;
+  x = mirror ? -x : x;
+  return {x:W/2 + x, y:H/2 + yy, r};
 }
 
-function drawBackground(showHello){
+function drawBackground(){
   ctx.clearRect(0,0,W,H);
-  ctx.fillStyle='#021227'; ctx.fillRect(0,0,W,H);
-  // horizon circle
-  ctx.strokeStyle='#2a4e88'; ctx.lineWidth=2;
+  const g = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,R*1.1);
+  g.addColorStop(0,"rgba(4,12,24,0)");
+  g.addColorStop(1,"rgba(0,0,0,0.6)");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle="#203456"; ctx.lineWidth=1.25;
   ctx.beginPath(); ctx.arc(W/2,H/2,R*scale,0,2*Math.PI); ctx.stroke();
-  // big crosshair + “HELLO SKY” to prove render
-  ctx.strokeStyle='#ffffff'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(W/2-30,H/2); ctx.lineTo(W/2+30,H/2); ctx.moveTo(W/2,H/2-30); ctx.lineTo(W/2,H/2+30); ctx.stroke();
-  if(showHello){ ctx.fillStyle='#ffffff'; ctx.font='bold 18px system-ui'; ctx.fillText('HELLO SKY', W/2-60, H/2-40); }
+  const n = project(0,0); if(n){
+    ctx.fillStyle="#9bb2da"; ctx.font="12px system-ui";
+    ctx.fillText("N", n.x-3, n.y-6);
+  }
 }
 
-function drawGrid(){
+function drawGrid(lstRad){
   if(!showGrid) return;
-  ctx.strokeStyle='#20406f'; ctx.setLineDash([4,6]); ctx.lineWidth=1;
+  ctx.strokeStyle="#1f3358"; ctx.lineWidth=0.8;
+  ctx.setLineDash([4,6]);
   ctx.beginPath();
   for(let alt=75*DEG; alt>0; alt-=15*DEG){
-    const r=( (Math.PI/2 - alt) / (fov/2) ) * R * scale;
-    ctx.moveTo(W/2+r,H/2); ctx.arc(W/2,H/2,r,0,2*Math.PI);
+    const theta = (Math.PI/2 - alt);
+    const r = (theta/(fov/2))*R*scale;
+    ctx.moveTo(W/2+r, H/2);
+    ctx.arc(W/2,H/2,r,0,2*Math.PI);
   }
-  ctx.stroke(); ctx.setLineDash([]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle="#25406b"; ctx.lineWidth=0.8;
+  for(let az=0; az<360; az+=30){
+    const a = az*DEG;
+    const p1 = project(a, 0.001);
+    const p2 = project(a, Math.PI/2-0.001);
+    if(p1 && p2){
+      ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
+      ctx.fillStyle="#7ea1d6"; ctx.font="11px system-ui";
+      ctx.fillText(\`\${az}°\`, p1.x+4, p1.y+4);
+    }
+  }
+}
+
+function drawMilkyWay(){
+  if(!showMW) return;
+  ctx.save();
+  ctx.globalAlpha=0.22;
+  ctx.fillStyle="#9ec9ff";
+  for(let k=0;k<4;k++){
+    ctx.beginPath();
+    for(let i=0;i<=360;i+=2){
+      const az = i*DEG;
+      const alt = (20*DEG*Math.sin((i*DEG)+k*0.7) + 20*DEG) * 0.5;
+      const p = project(az, alt);
+      if(!p) continue;
+      if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawEcliptic(){
+  if(!showEcliptic) return;
+  ctx.strokeStyle="#ffcf70"; ctx.lineWidth=1.2;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath();
+  for(let L=0;L<=360;L+=2){
+    const lam=L*DEG, beta=0;
+    const {ra,dec} = radecFromEcliptic(lam,beta);
+    const {az,alt} = azAltFromRADec(ra,dec, lat, currentLST);
+    const p=project(az,alt); if(!p) continue;
+    if(L===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
 }
 
 function drawStars(){
-  // Guaranteed visible sample stars regardless of math: eight compass points
-  ctx.fillStyle='#d8e7ff';
-  for(let a=0;a<8;a++){
-    const az=a*Math.PI/4;
-    const p=project(az, 45*DEG); if(p){ ctx.beginPath(); ctx.arc(p.x,p.y,3,0,2*Math.PI); ctx.fill(); }
+  ctx.save();
+  for(const s of stars){
+    const {az,alt} = azAltFromRADec(s.ra,s.dec, lat, currentLST);
+    if(alt<=0) continue;
+    const p = project(az,alt); if(!p) continue;
+    const size = clamp(2.2 - 0.28*s.mag, 0.6, 2.6);
+    ctx.fillStyle = "rgba(210,230,255,0.95)";
+    ctx.beginPath(); ctx.arc(p.x,p.y,size,0,2*Math.PI); ctx.fill();
   }
+  ctx.restore();
 }
 
+function drawMessier(){
+  if(!showMessier) return;
+  ctx.save();
+  ctx.fillStyle="#a8ffe0"; ctx.strokeStyle="#a8ffe0"; ctx.lineWidth=1;
+  ctx.font="11px system-ui";
+  for(const d of MESSIER){
+    const {az,alt} = azAltFromRADec(d.ra,d.dec, lat, currentLST);
+    if(alt<=0) continue;
+    const p=project(az,alt); if(!p) continue;
+    ctx.beginPath(); ctx.arc(p.x,p.y,3.8,0,2*Math.PI); ctx.stroke();
+    if(showLabels) ctx.fillText("⌾ "+d.name, p.x+6, p.y-6);
+  }
+  ctx.restore();
+}
+
+function drawPlanets(){
+  if(!showPlanets) return;
+  ctx.save();
+  ctx.font="11px system-ui";
+  for(const pl of ["Mercury","Venus","Mars","Jupiter","Saturn"]){
+    const geq = geocentricEquatorial(pl, currentJD);
+    const {az,alt} = azAltFromRADec(geq.ra, geq.dec, lat, currentLST);
+    if(alt<=0) continue;
+    const p=project(az,alt); if(!p) continue;
+    ctx.fillStyle = PLANETS.find(x=>x.name===pl).color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,3.8,0,2*Math.PI); ctx.fill();
+    if(showLabels){ ctx.fillText(\`◍ \${pl}\`, p.x+6, p.y-6); }
+  }
+  ctx.restore();
+}
+
+function drawInfo(){ octx.clearRect(0,0,W,H); }
+
+let currentJD=0, currentLST=0;
 function draw(){
-  currentJD=jdFromDate(time); currentLST=lst(currentJD,lon);
-  document.getElementById('jdRead').textContent=currentJD.toFixed(2);
-  drawBackground(true);
-  drawGrid();
-  drawStars(); // use demo stars so we always see something
-  // show debug text
-  ctx.fillStyle='#9bb2da'; ctx.font='12px system-ui';
-  ctx.fillText('Debug: W='+W+' H='+H+' R='+R.toFixed(1), 12, 20);
-  ctx.fillText('LST='+currentLST.toFixed(3)+' rad', 12, 36);
-  ctx.fillText('Lat='+ (lat*RAD).toFixed(2)+'° Lon='+ (lon*RAD).toFixed(2)+'°', 12, 52);
+  currentJD = jdFromDate(time);
+  currentLST = lst(currentJD, lon);
+  document.getElementById('lstRead').textContent = hmsFromRad(currentLST);
+  document.getElementById('latRead').textContent = (lat*RAD).toFixed(3)+"°";
+  drawBackground();
+  drawGrid(currentLST);
+  drawMilkyWay();
+  drawEcliptic();
+  drawStars();
+  drawMessier();
+  drawPlanets();
+  drawInfo();
 }
 
+/* ===================== Interaction ===================== */
+function toast(msg, t=1600){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className='show';
+  setTimeout(()=>el.className='', t);
+}
 function setNow(){
-  time=new Date();
-  const d=document.getElementById('date'), t=document.getElementById('time'); const pad=n=>n.toString().padStart(2,'0');
-  d.value=`${time.getFullYear()}-${pad(time.getMonth()+1)}-${pad(time.getDate())}`;
-  t.value=`${pad(time.getHours())}:${pad(time.getMinutes())}:${pad(time.getSeconds())}`;
+  time = new Date();
+  const d=document.getElementById('date'), ti=document.getElementById('time');
+  const pad=n=>n.toString().padStart(2,'0');
+  d.value = \`\${time.getFullYear()}-\${pad(time.getMonth()+1)}-\${pad(time.getDate())}\`;
+  ti.value = \`\${pad(time.getHours())}:\${pad(time.getMinutes())}:\${pad(time.getSeconds())}\`;
+}
+function fromInputs(){
+  const d=document.getElementById('date').value;
+  const t=document.getElementById('time').value || "00:00:00";
+  if(d){
+    const parts = d.split('-').map(Number);
+    const tp = t.split(':').map(Number);
+    const local = new Date(parts[0], parts[1]-1, parts[2], tp[0]||0, tp[1]||0, tp[2]||0 || 0);
+    time = new Date(local.getTime() - local.getTimezoneOffset()*60000);
+  }
+  lon = parseFloat(document.getElementById('lon').value || "-111.822")*DEG;
+  lat = parseFloat(document.getElementById('lat').value || "33.422")*DEG;
+  draw();
+}
+document.getElementById('btnNow').onclick = ()=>{ setNow(); draw(); toast("Jumped to now"); };
+document.getElementById('btnGeo').onclick = ()=>{
+  if(!navigator.geolocation){ toast("Geolocation not supported"); return; }
+  navigator.geolocation.getCurrentPosition(p=>{
+    document.getElementById('lat').value = p.coords.latitude.toFixed(6);
+    document.getElementById('lon').value = p.coords.longitude.toFixed(6);
+    fromInputs(); toast("Location set");
+  }, _=> toast("Couldn't get location"));
+};
+document.getElementById('presets').onchange = (e)=>{
+  const v=e.target.value; if(!v) return;
+  const [la,lo] = v.split(',').map(Number);
+  document.getElementById('lat').value = la;
+  document.getElementById('lon').value = lo;
+  fromInputs(); toast("Preset applied");
+};
+["lat","lon","date","time"].forEach(id=>document.getElementById(id).addEventListener('change', fromInputs));
+
+document.getElementById('zoom').oninput = (e)=>{ scale=parseFloat(e.target.value); document.getElementById('zoomRead').textContent=scale.toFixed(2)+"×"; draw();};
+document.getElementById('fov').oninput = (e)=>{ fov=parseFloat(e.target.value)*DEG; document.getElementById('fovRead').textContent=(fov*RAD).toFixed(0)+"°"; draw();};
+document.getElementById('flip').onchange = (e)=>{ mirror=e.target.checked; draw(); };
+document.getElementById('labels').onchange = (e)=>{ showLabels=e.target.checked; draw(); };
+document.getElementById('grid').onchange = (e)=>{ showGrid=e.target.checked; draw(); };
+document.getElementById('ecliptic').onchange = (e)=>{ showEcliptic=e.target.checked; draw(); };
+document.getElementById('mw').onchange = (e)=>{ showMW=e.target.checked; draw(); };
+document.getElementById('messier').onchange = (e)=>{ showMessier=e.target.checked; draw(); };
+document.getElementById('planets').onchange = (e)=>{ showPlanets=e.target.checked; draw(); };
+
+let playing=false, rate=60;
+document.getElementById('play').onclick = (e)=>{
+  playing=!playing; e.target.textContent = playing ? "⏸ Pause" : "▶ Play";
+};
+document.getElementById('rate').onchange = (e)=>{ rate=parseInt(e.target.value,10); };
+document.getElementById('rew').onclick = ()=>{ time = new Date(time.getTime() - 3600*1000); draw(); };
+document.getElementById('ff').onclick = ()=>{ time = new Date(time.getTime() + 3600*1000); draw(); };
+
+document.addEventListener('keydown', (ev)=>{
+  if(ev.key==='d' || ev.key==='D'){ showLabels=!showLabels; document.getElementById('labels').checked=showLabels; draw(); }
+});
+
+sky.addEventListener('mousedown', (e)=>{ dragging=true; rotating = e.shiftKey; lastX=e.clientX; lastY=e.clientY; sky.style.cursor = rotating ? 'grab' : 'grabbing'; });
+window.addEventListener('mouseup', ()=>{ dragging=false; sky.style.cursor='grab'; });
+window.addEventListener('mousemove', (e)=>{
+  if(!dragging) return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+  const k = 0.003;
+  if(rotating){ pitch = clamp(pitch + dy*k, -0.6, 0.6); yaw += dx*k; }
+  else{ yaw += dx*k; pitch = clamp(pitch - dy*k*0.4, -0.6, 0.6); }
+  draw();
+});
+sky.addEventListener('wheel', (e)=>{ e.preventDefault(); const z=parseFloat(document.getElementById('zoom').value); const nz = clamp(z*(e.deltaY<0?1.05:0.95), 0.6, 3.0); document.getElementById('zoom').value=nz; scale=nz; document.getElementById('zoomRead').textContent=scale.toFixed(2)+"×"; draw();}, {passive:false});
+
+document.getElementById('northBtn').onclick = ()=>{ yaw=0; draw(); };
+document.getElementById('zenithBtn').onclick = ()=>{ pitch=0; draw(); };
+document.getElementById('resetView').onclick = ()=>{ yaw=0; pitch=0; scale=1; document.getElementById('zoom').value=1; fov=180*DEG; document.getElementById('fov').value=180; draw(); };
+
+/* ===================== Animate ===================== */
+function tick(){
+  if(playing){
+    time = new Date(time.getTime() + 1000*rate/60);
+    if(Math.floor(performance.now()/1000)%1===0){
+      const pad=n=>n.toString().padStart(2,'0');
+      document.getElementById('time').value = \`\${pad(time.getHours())}:\${pad(time.getMinutes())}:\${pad(time.getSeconds())}\`;
+      document.getElementById('date').value = \`\${time.getFullYear()}-\${pad(time.getMonth()+1)}-\${pad(time.getDate())}\`;
+    }
+  }
+  draw();
+  requestAnimationFrame(tick);
 }
 
-document.getElementById('btnNow').onclick=()=>{ setNow(); draw(); };
-document.getElementById('btnGeo').onclick=()=>{
-  if(!navigator.geolocation){ document.getElementById('status').textContent='status: no geolocation'; return; }
-  navigator.geolocation.getCurrentPosition(p=>{
-    document.getElementById('lat').value=p.coords.latitude.toFixed(6);
-    document.getElementById('lon').value=p.coords.longitude.toFixed(6);
-    lat=parseFloat(p.coords.latitude)*DEG; lon=parseFloat(p.coords.longitude)*DEG; draw();
-    document.getElementById('status').textContent='status: location set';
-  }, _=> document.getElementById('status').textContent='status: geolocation denied');
-};
-document.getElementById('btnTest').onclick=()=>{ draw(true); };
-
-document.getElementById('grid').onchange=e=>{ showGrid=e.target.checked; draw(); };
-document.getElementById('ecliptic').onchange=e=>{ showEcliptic=e.target.checked; draw(); };
-document.getElementById('planets').onchange=e=>{ showPlanets=e.target.checked; draw(); };
-document.getElementById('dso').onchange=e=>{ showDSO=e.target.checked; draw(); };
-document.getElementById('resetView').onclick=()=>{ yaw=0; pitch=0; scale=1; resize(); };
-
+/* ===================== Init ===================== */
 function init(){
   setNow();
-  // double RAF to ensure layout settled
+  // robust sizing: double RAF + ResizeObserver
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     resize();
     if('ResizeObserver' in window){
-      new ResizeObserver(resize).observe(wrap);
-    } else {
+      const ro = new ResizeObserver(resize);
+      ro.observe(document.getElementById('canvasWrap'));
+    }else{
       window.addEventListener('resize', resize);
     }
   }));
+  tick();
 }
 init();
 </script>
