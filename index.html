@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.14 (AutoLaunch + Trajectory)</title>
+<title>Pocket Planetarium — v1.14.1 (Mag Filter + Jumbo Scrubber)</title>
 <style>
 :root{ --bg:#040816; --ink:#eaf2ff; --muted:#a9c2ff; --edge:#1b2d6a; --panel:#0a1240; --accent:#7ee7ff; --warn:#ffd36e; --ok:#a4ffcc; }
 html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -23,7 +23,7 @@ body::before{content:""; position:fixed; inset:0; z-index:-3; background:
 #redveil{position:fixed;inset:0;pointer-events:none;background:rgba(255,40,40,0.18);opacity:0;transition:.2s;z-index:1000}
 html.night #redveil{opacity:1}
 
-#app{display:grid;grid-template-rows:78px 1fr 120px;grid-template-columns:480px 1fr;gap:14px;min-height:100vh;padding:14px;box-sizing:border-box}
+#app{display:grid;grid-template-rows:78px 1fr 150px;grid-template-columns:480px 1fr;gap:14px;min-height:100vh;padding:14px;box-sizing:border-box}
 header{grid-column:1/-1;display:flex;align-items:center;gap:12px}
 #brand{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,#09133b,#08112e);border:1px solid var(--edge);box-shadow:0 0 16px #000 inset, 0 0 28px rgba(126,231,255,.08)}
 #logo{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #b8fff7 0%, #6dd3ff 40%, #2a4bff 60%, #001637 72%); box-shadow:0 0 24px #69f2ff88}
@@ -36,7 +36,7 @@ header h1{margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba
   box-shadow: 0 0 0 1px #1a2f69, inset 0 0 80px rgba(130,180,255,.06); min-height:60vh}
 #sky{width:100%;height:100%;display:block;cursor:grab}
 #overlay{position:absolute;inset:0;pointer-events:none}
-#bottom{grid-row:3;grid-column:2;display:grid;grid-template-rows:auto;gap:12px;align-items:center;background:linear-gradient(180deg,#0a1338 0,#0b1230 100%);border:1px solid var(--edge);border-radius:16px;padding:12px;box-shadow:inset 0 0 40px rgba(126,231,255,.05)}
+#bottom{grid-row:3;grid-column:2;display:grid;grid-template-rows:auto auto;gap:10px;align-items:center;background:linear-gradient(180deg,#0a1338 0,#0b1230 100%);border:1px solid var(--edge);border-radius:16px;padding:16px;box-shadow:inset 0 0 40px rgba(126,231,255,.05)}
 
 .panel h3{margin:.4rem 0 .6rem;font-size:12px;color:#b8c9ff;text-transform:uppercase;letter-spacing:.16em}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:.45rem 0}
@@ -52,6 +52,11 @@ header h1{margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba
 .range{appearance:none;width:100%;height:10px;border-radius:999px;background:#0b1848;border:1px solid #21406e;outline:none}
 .range::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8ff,#6cf);border:1px solid #2b6;box-shadow:0 0 10px #8ff}
 .range::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8ff,#6cf);border:1px solid #2b6;box-shadow:0 0 10px #8ff}
+
+/* Jumbo time scrubber */
+.range.jumbo{height:18px}
+.range.jumbo::-webkit-slider-thumb{width:28px;height:28px}
+.range.jumbo::-moz-range-thumb{width:28px;height:28px}
 
 /* Collapsible panels */
 details{border:1px solid var(--edge); border-radius:12px; background:#0b1442; margin:10px 0; padding:8px}
@@ -76,7 +81,7 @@ html.night #redveilNote{display:inline}
 <div id="app">
   <header>
     <div id="brand"><div id="logo"></div><h1>🪐 Pocket Planetarium</h1></div>
-    <span class="badge">v1.14 Trajectory</span>
+    <span class="badge">v1.14.1</span>
     <span class="pill">W×H <span id="wh">—</span></span>
     <span class="pill">LST <span id="lstRead">—</span></span>
     <span id="launchBadge" class="badge">🚀 Launch in <span id="badgeCountdown">—</span></span>
@@ -123,6 +128,11 @@ html.night #redveilNote{display:inline}
         <label class="toggle"><input id="ecliptic" type="checkbox" checked/><span>Ecliptic</span></label>
         <label class="toggle"><input id="mw" type="checkbox" checked/><span>Milky Way glow</span></label>
         <label class="toggle"><input id="constLines" type="checkbox" checked/><span>Constellations</span></label>
+      </div>
+      <div class="row">
+        <span class="note">Star limit (mag)</span>
+        <input type="range" id="magLimit" class="range" min="0" max="8" step="0.1" value="6.5" style="flex:1"/>
+        <span class="pill">≤ <span id="magRead">6.5</span></span>
       </div>
     </details>
 
@@ -178,8 +188,8 @@ html.night #redveilNote{display:inline}
 
   <div id="bottom">
     <div class="row" style="width:100%">
-      <span class="note">Time</span>
-      <input id="timeScrub" class="range" type="range" min="-43200" max="43200" step="60" value="0" style="flex:1" />
+      <span class="note">Time (±7 days)</span>
+      <input id="timeScrub" class="range jumbo" type="range" min="-604800" max="604800" step="60" value="0" style="flex:1" />
       <span class="pill">Δ <span id="deltaRead">+0m</span></span>
       <span class="pill">🕒 <span id="clockRead">—:—:—</span></span>
       <button class="btn" id="play">▶ Play</button>
@@ -212,14 +222,12 @@ function lst(jd, lonRad){ return mod(gmst(jd) + lonRad, 2*Math.PI); }
 function radecFromEcliptic(lam, beta){ const eps=23.43928*DEG; const sinDec=Math.sin(beta)*Math.cos(eps)+Math.cos(beta)*Math.sin(eps)*Math.sin(lam); const dec=Math.asin(clamp(sinDec,-1,1)); const y=Math.sin(lam)*Math.cos(eps)-Math.tan(beta)*Math.sin(eps); const x=Math.cos(lam); return {ra:mod(Math.atan2(y,x),2*Math.PI), dec}; }
 function azAltFromRADec(ra, dec, lat, lstRad){ const H=mod(lstRad - ra,2*Math.PI); const sinAlt=Math.sin(dec)*Math.sin(lat)+Math.cos(dec)*Math.cos(lat)*Math.cos(H); const alt=Math.asin(clamp(sinAlt,-1,1)); const cosAz=(Math.sin(dec)-Math.sin(alt)*Math.sin(lat))/(Math.cos(alt)*Math.cos(lat)); let az=Math.acos(clamp(cosAz,-1,1)); if(Math.sin(H)>0) az=2*Math.PI-az; return {az,alt}; }
 
-// Sun/Moon
 function sunEquatorial(jd){ function planetPositionEcliptic(){ const T=(jd-2451545.0)/36525.0; const a=1.00000261,e=0.01671123,I=(-0.00001531)*DEG,L=(100.46457166+36000.770*T)*DEG,lp=(102.93768193)*DEG,o=0; const M=mod(L - lp, 2*Math.PI); let E=M; for(let i=0;i<6;i++) E = M + e*Math.sin(E); const nu=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2)); const r=a*(1 - e*Math.cos(E)); const x=r*(Math.cos(o)*Math.cos(nu+lp-o) - Math.sin(o)*Math.sin(nu+lp-o)*Math.cos(I)); const y=r*(Math.sin(o)*Math.cos(nu+lp-o) + Math.cos(o)*Math.sin(nu+lp-o)*Math.cos(I)); const z=r*(Math.sin(nu+lp-o)*Math.sin(I)); return {x,y,z}; }
   const e=planetPositionEcliptic(); const x=-e.x, y=-e.y, z=-e.z; const eps=23.43928*DEG; const xe=x; const ye=y*Math.cos(eps) - z*Math.sin(eps); const ze=y*Math.sin(eps) + z*Math.cos(eps); const ra = mod(Math.atan2(ye, xe), 2*Math.PI); const dec = Math.atan2(ze, Math.hypot(xe,ye)); return {ra, dec}; }
 function moonEquatorial(jd){ const T=(jd-2451545.0)/36525; const Lp=(218.3164477 + 481267.88123421*T)*DEG; const D=(297.8501921 + 445267.1114034*T)*DEG; const Mp=(134.9633964 + 477198.8675055*T)*DEG; const F=(93.2720950 + 483202.0175233*T)*DEG; const lon=Lp + 6.289*DEG*Math.sin(Mp)+1.274*DEG*Math.sin(2*D - Mp)+0.658*DEG*Math.sin(2*D)+0.214*DEG*Math.sin(2*Mp)+0.110*DEG*Math.sin(D); const lat=5.128*DEG*Math.sin(F)+0.280*DEG*Math.sin(Mp + F)+0.277*DEG*Math.sin(Mp - F)+0.173*DEG*Math.sin(2*D - F); return radecFromEcliptic(lon, lat); }
 function moonIllumination(jd){ const s=sunEquatorial(jd); const m=moonEquatorial(jd); const cospsi=Math.sin(s.dec)*Math.sin(m.dec)+Math.cos(s.dec)*Math.cos(m.dec)*Math.cos(mod(s.ra-m.ra,2*Math.PI)); const psi=Math.acos(clamp(cospsi,-1,1)); const k=(1-Math.cos(psi))/2;
   const age=mod(m.ra-s.ra,2*Math.PI); const deg=age*RAD; let name=""; if(deg<22.5) name="New Moon"; else if(deg<67.5) name="Waxing Crescent"; else if(deg<112.5) name="First Quarter"; else if(deg<157.5) name="Waxing Gibbous"; else if(deg<202.5) name="Full Moon"; else if(deg<247.5) name="Waning Gibbous"; else if(deg<292.5) name="Last Quarter"; else if(deg<337.5) name="Waning Crescent"; else name="New Moon"; return {fraction:k, name}; }
 
-// Stars + DSO
 function seededRandom(seed){ let t=seed>>>0; return function(){ t=(t+0x6D2B79F5)|0; let r=Math.imul(t^(t>>>15),1|t); r^=r+Math.imul(r^(t>>>7),61|t); return ((r^(r>>>14))>>>0)/4294967296; };}
 function makeStars(n=6500, seed=2025){ const rnd=seededRandom(seed), out=[]; for(let i=0;i<n;i++){ const u=rnd(), v=rnd(), w=rnd(); const ra=2*Math.PI*u; const x=Math.acos(1-2*v)-Math.PI/2; const bias=0.35*Math.sin(ra*0.5)+0.45*Math.sin((ra+1.2)*1.0); const dec=clamp(x+bias*DEG*15,-Math.PI/2,Math.PI/2); const mag=1.3 + -2*Math.log10(0.02+w*w); out.push({ra,dec,mag}); } return out; }
 const stars=makeStars();
@@ -232,7 +240,6 @@ const DSO=[
 const CONSTS=[{name:"Orion", lines:[[ {ra:raRad(5,14),dec:-8*DEG},{ra:raRad(5,55),dec:7*DEG} ], [ {ra:raRad(5,35),dec:-5.4*DEG},{ra:raRad(5,36),dec:-1.2*DEG} ]]}];
 const RADIANTS=[{name:"Perseids", ra:(3+4/60)*15*DEG, dec:58*DEG, when:"Aug 11–13"}];
 
-// Canvases & state
 const sky=document.getElementById('sky'), ol=document.getElementById('overlay'), wrap=document.getElementById('canvasWrap');
 const ctx=sky.getContext('2d'), octx=ol.getContext('2d');
 const whEl=document.getElementById('wh'), lstEl=document.getElementById('lstRead'), debugEl=document.getElementById('debug'), clockRead=document.getElementById('clockRead'), deltaRead=document.getElementById('deltaRead');
@@ -243,8 +250,8 @@ let showLabels=true, showGrid=true, showEcliptic=true, showMW=true, showConst=tr
 let currentJD=0, currentLST=0; let playing=false, rate=60, lastT=performance.now();
 let autoLaunch=true, drawLaunchTrack=true;
 const KSC={name:"KSC/Cape", lat:28.6084, lon:-80.6043}, VBG={name:"Vandenberg", lat:34.632, lon:-120.611};
-let launches=[]; // from LL2
-let activeId = null; // the launch we're highlighting & syncing time to
+let launches=[];
+let activeId = null;
 
 // Resize
 function safeSize(){ let w=wrap.clientWidth, h=wrap.clientHeight; if(!w||!h){ w=Math.max(640, Math.floor(window.innerWidth*0.9)); h=Math.max(380, Math.floor(window.innerHeight*0.6)); wrap.style.minHeight=h+'px'; } return {w,h}; }
@@ -255,7 +262,7 @@ function resize(){ const dpr=Math.max(1,Math.min(2.5,window.devicePixelRatio||1)
 
 // Time helpers
 function currentTime(){ return new Date(baseTime.getTime() + offsetSeconds*1000); }
-function updateDeltaRead(){ const sign=offsetSeconds>=0?"+":"−"; const absSec=Math.abs(offsetSeconds); const h=Math.floor(absSec/3600); const m=Math.floor((absSec%3600)/60); deltaRead.textContent=`${sign}${h? h+'h ':''}${m}m`; }
+function updateDeltaRead(){ const s=Math.abs(offsetSeconds); const sign=offsetSeconds>=0?"+":"−"; const d=Math.floor(s/86400); const h=Math.floor((s%86400)/3600); const m=Math.floor((s%3600)/60); let txt=`${sign}`; if(d) txt+=`${d}d `; if(h) txt+=`${h}h `; txt+=`${m}m`; deltaRead.textContent=txt; }
 
 // Projection & drawing
 function project(az, alt){ const theta=(Math.PI/2 - alt), maxTheta=fov/2; if(theta>maxTheta) return null; const r=(theta/maxTheta)*R*scale;
@@ -274,7 +281,7 @@ function drawConstellations(){ if(!showConst) return; ctx.save(); ctx.strokeStyl
 function drawRadiants(){ if(!showRadiants) return; const phase=animateRadiants? (Date.now()%2000)/2000 : 0.3; const pulse=0.6+0.4*Math.sin(phase*2*Math.PI);
   for(const r of RADIANTS){ const {az,alt}=azAltFromRADec(r.ra,r.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; const base=8, rad=base+6*pulse; octx.beginPath(); octx.arc(p.x,p.y,rad+3,0,2*Math.PI); octx.fillStyle="rgba(120,220,255,0.12)"; octx.fill(); octx.beginPath(); octx.arc(p.x,p.y,rad,0,2*Math.PI); octx.strokeStyle="rgba(160,240,255,0.8)"; octx.lineWidth=1; octx.setLineDash([4,3]); octx.stroke(); octx.setLineDash([]); if(showLabels){ octx.fillStyle="#ddfaff"; octx.font="11px system-ui"; octx.fillText(`✴ ${r.name}`, p.x+10, p.y-8); octx.fillStyle="#9bd8ff"; octx.fillText(r.when, p.x+10, p.y+6);} } }
 
-// ==== Launch Library 2 fetching ====
+// Launches (LL2)
 async function fetchLaunches(){
   try{
     launchStatus.textContent="Fetching from Launch Library 2…";
@@ -319,20 +326,14 @@ function renderLaunchList(){
     </div>`;
   }).join("");
   launchList.innerHTML = html;
-  // click -> jump to NET and set activeId
   launchList.querySelectorAll('button[data-jump]').forEach(b=> b.onclick = ()=>{
     const L=launches.find(x=>x.id===b.dataset.jump); if(!L||!L.net) return;
-    activeId = L.id;
-    baseTime = new Date(L.net.getTime()); offsetSeconds = 0;
+    activeId = L.id; baseTime = new Date(L.net.getTime()); offsetSeconds = 0;
     document.getElementById('timeScrub').value = 0; updateDeltaRead();
-    // center view roughly toward launch azimuth
-    const br = bearingTo(L.site.lat*DEG, L.site.lon*DEG);
-    yaw = -br; pitch = 0;
+    const br = bearingTo(L.site.lat*DEG, L.site.lon*DEG); yaw = -br; pitch = 0;
     toast("Jumped to NET — trajectory overlay active");
   });
 }
-
-// Countdown + header badge
 function updateCountdowns(){
   if(!launches.length) { launchBadge.style.display='none'; return; }
   let soonest=null;
@@ -353,17 +354,15 @@ function updateCountdowns(){
   }
 }
 
-// --- "Real-ish" launch trajectory model ---
-// We estimate azimuth from site+orbit, and elevation from a smooth ascent curve with distance-based ceiling.
-// Azimuth drift: small drift toward downrange; Elevation: logistic ascent to peak, then taper.
+// Trajectory approx
 function classifyAzimuth(site, orbit){
   const o=(orbit||"").toUpperCase();
   if(site.name.includes("Vandenberg")){
-    if(o.includes("SSO")||o.includes("POL")) return 190*DEG; // southbound polar-ish
+    if(o.includes("SSO")||o.includes("POL")) return 190*DEG;
     return 200*DEG;
-  }else{ // KSC/Cape
-    if(o.includes("GTO")) return 95*DEG; // more easterly
-    if(o.includes("ISS")||o.includes("LEO")) return 55*DEG; // northeast to ~51.6° inclination
+  }else{
+    if(o.includes("GTO")) return 95*DEG;
+    if(o.includes("ISS")||o.includes("LEO")) return 55*DEG;
     return 80*DEG;
   }
 }
@@ -371,25 +370,21 @@ function distanceKm(φ1,λ1,φ2,λ2){ const dφ=φ2-φ1, dλ=λ2-λ1; const a=Ma
 function bearingTo(lat2, lon2){ const φ1=lat, λ1=lon, φ2=lat2, λ2=lon2; const y=Math.sin(λ2-λ1)*Math.cos(φ2); const x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1); return mod(Math.atan2(y,x),2*Math.PI); }
 function softstep(x){ return 1/(1+Math.exp(-x)); }
 function trajPointsForLaunch(L){
-  const brObs = bearingTo(L.site.lat*DEG, L.site.lon*DEG); // observer->site
+  const brObs = bearingTo(L.site.lat*DEG, L.site.lon*DEG);
   const azNom = classifyAzimuth(L.site, L.orbit);
   const dist = distanceKm(lat,lon, L.site.lat*DEG, L.site.lon*DEG);
   const altMax = dist<600? 70*DEG : dist<1100? 45*DEG : dist<1800? 25*DEG : 12*DEG;
-  const spanMin = 18; // total minutes we draw
+  const spanMin = 18;
   const pts=[];
-  for(let m=-2; m<=spanMin; m+=0.5){ // from -2 to +18 minutes from NET
-    const t = m; // minutes
-    // Elevation curve: logistic growth to peak around +5..+7 min then gentle fall
-    const up = softstep((t-2.5)*0.9); // rise onset ~ +2.5m
-    const down = 1 - 0.25*softstep((t-9)*0.7); // taper after +9m
+  for(let m=-2; m<=spanMin; m+=0.5){
+    const t = m;
+    const up = softstep((t-2.5)*0.9);
+    const down = 1 - 0.25*softstep((t-9)*0.7);
     const alt = clamp((altMax * up * down), 3*DEG, Math.PI/2);
-    // Azimuth evolves from site bearing toward nominal launch azimuth projected from observer
-    const drift = clamp((t+2)/10, 0, 1); // 0..1 over ~ first 8 min
+    const drift = clamp((t+2)/10, 0, 1);
     const az = mod(brObs*(1-drift) + azNom*drift, 2*Math.PI);
-    // Project at the simulated time (we also adjust LST because stars move)
     const simTime = new Date((L.net? L.net.getTime() : Date.now()) + t*60000);
     const jd=jdFromDate(simTime), LST=lst(jd, lon);
-    // Convert (az,alt) directly to canvas (no RA/Dec since these are apparent local coords)
     const p=project(az, alt);
     if(p) pts.push({x:p.x,y:p.y, tMin:m});
   }
@@ -397,7 +392,6 @@ function trajPointsForLaunch(L){
 }
 function drawLaunchTrajectory(){
   if(!drawLaunchTrack || !launches.length) return;
-  // Choose the active card if set; otherwise the soonest-in-window
   let L = launches.find(x=> x.id===activeId);
   if(!L){
     const now=new Date(); const pre=2*3600000;
@@ -411,12 +405,11 @@ function drawLaunchTrajectory(){
   octx.beginPath(); octx.moveTo(pts[0].x, pts[0].y);
   for(let i=1;i<pts.length;i++){ octx.lineTo(pts[i].x, pts[i].y); }
   octx.stroke(); octx.setLineDash([]);
-  // Highlight current point at current simulation time relative to NET
   const tNowMin = ((currentTime().getTime()) - (L.net? L.net.getTime(): currentTime().getTime()))/60000;
   let closest=pts[0]; let dmin=1e9;
   for(const p of pts){ const d=Math.abs(p.tMin - tNowMin); if(d<dmin){ dmin=d; closest=p; } }
   if(closest){ octx.fillStyle="#ffd36e"; octx.beginPath(); octx.arc(closest.x, closest.y, 4, 0, 2*Math.PI); octx.fill();
-    if(showLabels){ octx.font="11px system-ui"; octx.fillText("⤴︎ Launch (approx)", closest.x+8, closest.y-6); } }
+    if(true){ octx.font="11px system-ui"; octx.fillText("⤴︎ Launch (approx)", closest.x+8, closest.y-6); } }
   octx.restore();
 }
 
@@ -439,7 +432,7 @@ function updateRiseSetUI(){ const {sunrise,sunset,moonrise,moonset,illum}=findEv
   document.getElementById('moonrise').textContent=fmtTime(moonrise); document.getElementById('moonset').textContent=fmtTime(moonset);
   document.getElementById('moonphase').textContent = illum.name; document.getElementById('moonillum').textContent = `(${Math.round(illum.fraction*100)}% lit)`; }
 
-// DSO list (minimal)
+// DSO list
 function dsoThumbSVG(type){ const colors={Galaxy:"#9ad1ff",Nebula:"#a4ffcc","Open Cluster":"#ffe6a3","Globular Cluster":"#ffd36e",PN:"#b6a0ff"}; const symbol= type==="Galaxy" ? "<ellipse cx='21' cy='21' rx='14' ry='7' fill='none' stroke='white' stroke-width='1.5'/>" : type==="Nebula" ? "<circle cx='21' cy='21' r='12' fill='url(#g)'/>" : "<g><circle cx='12' cy='18' r='2' fill='white'/><circle cx='20' cy='24' r='2' fill='white'/><circle cx='28' cy='16' r='2' fill='white'/></g>"; return `data:image/svg+xml;utf8,`+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 42'><defs><radialGradient id='g'><stop offset='0%' stop-color='${colors[type]||"#9ad1ff"}' stop-opacity='0.9'/><stop offset='100%' stop-color='${colors[type]||"#9ad1ff"}' stop-opacity='0.0'/></radialGradient></defs><rect width='42' height='42' rx='8' ry='8' fill='#08133a'/>${symbol}</svg>`); }
 function renderDSOList(){ const list=document.getElementById('dsoList'); const q=(document.getElementById('dsoSearch').value||"").toLowerCase(); const typ=document.getElementById('dsoType').value; const mlim=parseFloat(document.getElementById('dsoMagLimit').value||"12");
   const filtered = DSO.filter(o=> (typ? o.type===typ : true) && (o.mag==null || o.mag<=mlim) && (q? o.name.toLowerCase().includes(q) : true) );
@@ -450,7 +443,7 @@ document.getElementById('dsoSearch').addEventListener('input', renderDSOList);
 document.getElementById('dsoType').addEventListener('change', renderDSOList);
 document.getElementById('dsoMagLimit').addEventListener('input', renderDSOList);
 
-// Controls
+// View controls + mag filter
 function toast(msg, t=1600){ const el=document.getElementById('toast'); el.textContent = msg; el.style.opacity=1; el.style.transform='translateY(0)'; setTimeout(()=>{ el.style.opacity=0; el.style.transform='translateY(8px)'; }, t); }
 function setNow(){ const now=new Date(); baseTime=new Date(now.getTime()); offsetSeconds=0; document.getElementById('date').value=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`; document.getElementById('time').value=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`; document.getElementById('timeScrub').value="0"; updateDeltaRead(); draw(); updateRiseSetUI(); }
 function fromInputs(){ const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00"; if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); const local=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); baseTime=new Date(local.getTime()-local.getTimezoneOffset()*60000); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); } lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; draw(); updateRiseSetUI(); }
@@ -467,10 +460,10 @@ document.getElementById('ecliptic').onchange=(e)=>{ showEcliptic=e.target.checke
 document.getElementById('mw').onchange=(e)=>{ showMW=e.target.checked; draw(); };
 document.getElementById('constLines').onchange=(e)=>{ showConst=e.target.checked; draw(); };
 document.getElementById('nightToggle').onclick=()=>{ document.documentElement.classList.toggle('night'); toast(document.documentElement.classList.contains('night') ? "Night vision ON" : "Night vision OFF"); };
-document.getElementById('launchAuto').onchange=(e)=>{ autoLaunch=e.target.checked; };
-document.getElementById('launchTrack').onchange=(e)=>{ drawLaunchTrack=e.target.checked; };
+const magSlider=document.getElementById('magLimit'); const magRead=document.getElementById('magRead');
+magSlider.oninput=(e)=>{ magLimit=parseFloat(e.target.value); magRead.textContent=magLimit.toFixed(1); draw(); };
 
-// Time controls
+// Time controls (±7 days, jumbo slider)
 const scrub=document.getElementById('timeScrub');
 scrub.oninput=(e)=>{ playing=false; document.getElementById('play').textContent="▶ Play"; offsetSeconds=parseInt(e.target.value,10); updateDeltaRead(); draw(); };
 document.getElementById('play').onclick=(e)=>{ playing=!playing; e.target.textContent= playing ? "⏸ Pause" : "▶ Play"; };
@@ -480,13 +473,14 @@ document.getElementById('ff').onclick=()=>{ offsetSeconds += 3600; scrub.value=o
 document.getElementById('resetView').onclick=()=>{ yaw=0; pitch=0; scale=1; document.getElementById('zoom').value=1; fov=180*DEG; document.getElementById('fov').value=180; draw(); };
 
 // Draw loop
+let currentJD=0, currentLST=0;
 function draw(first=false){
   const t=currentTime(); const jd=jdFromDate(t); currentJD=jd; currentLST=lst(jd, lon);
   lstEl.textContent = (mod(currentLST,2*Math.PI)*12/Math.PI).toFixed(2).replace('.',':');
   clockRead.textContent = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
   ctx.save(); drawBackground(first); drawGrid(); drawMilkyWay(); drawEcliptic(); drawStars(); drawDSO(); drawConstellations(); ctx.restore();
   octx.clearRect(0,0,ol.width,ol.height); drawRadiants(); drawLaunchTrajectory();
-  debugEl.textContent = `W=${W} H=${H} | JD=${currentJD.toFixed(3)} | Δ=${(offsetSeconds/3600).toFixed(2)}h`;
+  debugEl.textContent = `W=${W} H=${H} | JD=${currentJD.toFixed(3)} | Δ=${(offsetSeconds/3600).toFixed(2)}h | mag≤${magLimit.toFixed(1)}`;
 }
 function tick(){
   const now=performance.now(); const dt=(now-lastT)/1000; lastT=now;
@@ -495,9 +489,6 @@ function tick(){
   updateCountdowns();
   requestAnimationFrame(tick);
 }
-
-// Rise/Set init
-function localMidnightBase(){ const b=baseTime; return new Date(b.getFullYear(), b.getMonth(), b.getDate(), 0,0,0); }
 
 // Init
 async function init(){
