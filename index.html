@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Pocket Planetarium — v1.14.13 (Planets + Constellations + Meteor Panel Fix)</title>
+<title>Pocket Planetarium — v1.15.0 (Sun/Moon + Uranus/Neptune + Rise/Set)</title>
 <style>
 :root{ --bg:#040816; --ink:#eaf2ff; --muted:#a9c2ff; --edge:#1b2d6a; --panel:#0a1240; --accent:#7ee7ff; --warn:#ffd36e; --ok:#a4ffcc; --pad:14px; }
 html,body{height:100%;margin:0;background:var(--bg);color:#eaf2ff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden}
@@ -70,6 +70,11 @@ html.night #redveil{opacity:1}
 @media (max-width: 1040px){
   #app{grid-template-columns:360px 1fr}
 }
+/* simple list styles */
+.list .item{display:flex;gap:10px;align-items:center;padding:6px 8px;border-bottom:1px solid #142350}
+.list .item:last-child{border-bottom:none}
+.thumb{width:42px;height:42px;border-radius:8px;border:1px solid #203a80;background:#08133a;object-fit:cover}
+.meta{font-size:12px;color:#9fb3ff}
 </style>
 
 <!-- SGP4 for satellites -->
@@ -80,7 +85,7 @@ html.night #redveil{opacity:1}
 <div id="app">
   <header>
     <div id="brand"><div id="logo"></div><h1>🪐 Pocket Planetarium</h1></div>
-    <span class="badge">v1.14.13</span>
+    <span class="badge">v1.15.0</span>
     <span class="pill">W×H <span id="wh">—</span></span>
     <span class="pill">LST <span id="lstRead">—</span></span>
     <span id="launchBadge" class="badge" style="display:none">🚀 Launch in <span id="badgeCountdown">—</span></span>
@@ -116,7 +121,7 @@ html.night #redveil{opacity:1}
       </div>
       <div class="row">
         <label class="toggle"><input id="toggleStars" type="checkbox" checked/><span>Stars</span></label>
-        <label class="toggle"><input id="togglePlanets" type="checkbox" checked/><span>Planets</span></label>
+        <label class="toggle"><input id="togglePlanets" type="checkbox" checked/><span>Planets (incl. Sun & Moon)</span></label>
         <label class="toggle"><input id="toggleDSO" type="checkbox" checked/><span>Deep Sky</span></label>
         <label class="toggle"><input id="toggleRadiants" type="checkbox" checked/><span>Meteor Radiants</span></label>
         <label class="toggle"><input id="toggleSat" type="checkbox" checked/><span>Satellites/ISS</span></label>
@@ -151,6 +156,11 @@ html.night #redveil{opacity:1}
       <div id="meteorList" class="list"></div>
     </details>
 
+    <details open id="riseDetails">
+      <summary><span class="chev">▶</span> 🌅 Rise/Set & Moon Phase</summary>
+      <div id="riseSet" class="list"></div>
+    </details>
+
     <details>
       <summary><span class="chev">▶</span> 🛰️ Satellites & ISS</summary>
       <div class="row" style="font-size:12px;color:#a9c2ff">Uses live TLE (internet) to draw the ISS and list next visible passes (~12h).</div>
@@ -173,7 +183,7 @@ html.night #redveil{opacity:1}
   <div id="canvasWrap">
     <canvas id="sky"></canvas>
     <canvas id="overlay"></canvas>
-    <div class="legend"><div><strong>Legend:</strong> ● star, ⌾ DSO, ♂/♀/♃ planet, ✴ radiant, — constellation, ⤴︎ launch, ◉ ISS</div><div>Horizon = circle edge • North ↑</div></div>
+    <div class="legend"><div><strong>Legend:</strong> ● star, ⌾ DSO, ♂/♀/♃/♄/♅/♆/☉/☽ planets, ✴ radiant, — constellation, ⤴︎ launch, ◉ ISS</div><div>Horizon = circle edge • North ↑</div></div>
   </div>
 
   <div id="bottom">
@@ -237,7 +247,7 @@ const RADIANTS=[
  {name:"Geminids",    peak:"12-14", ra:112*DEG, dec:33*DEG, width:5}
 ];
 
-// Expanded constellation lines (a small curated set)
+// Expanded constellation lines (curated set)
 const CONSTLINES=[
  {name:"Orion", lines:[
   [[raRad(5,55),7.4*DEG],[raRad(5,25),6.3*DEG]],
@@ -273,6 +283,7 @@ const whEl=document.getElementById('wh'), lstEl=document.getElementById('lstRead
 const launchBadge=document.getElementById('launchBadge'), badgeCountdown=document.getElementById('badgeCountdown'), launchStatus=document.getElementById('launchStatus'), launchList=document.getElementById('launchList');
 const satStatus=document.getElementById('satStatus'), issNextEl=document.getElementById('issNext');
 const meteorDetails=document.getElementById('meteorDetails'), meteorList=document.getElementById('meteorList');
+const riseSetEl=document.getElementById('riseSet');
 let W=0,H=0,R=0, scale=1, fov=180*DEG; let lat=33.422*DEG, lon=-111.822*DEG;
 let baseTime=new Date(), offsetSeconds=0, yaw=0, pitch=0, mirror=false;
 let showLabels=true, showGrid=true, showEcliptic=true, showConst=true;
@@ -291,7 +302,8 @@ function resize(){ const dpr=Math.max(1,Math.min(2.5,window.devicePixelRatio||1)
 // Time
 function currentTime(){ return new Date(baseTime.getTime() + offsetSeconds*1000); }
 function updateDeltaRead(){ const s=Math.abs(offsetSeconds); const sign=offsetSeconds>=0?"+":"−"; const d=Math.floor(s/86400); const h=Math.floor((s%86400)/3600); const m=Math.floor((s%3600)/60); let txt=`${sign}`; if(d) txt+=`${d}d `; if(h) txt+=`${h}h `; txt+=`${m}m`; deltaRead.textContent=txt; }
-function setInputsFromBase(){ const local=new Date(baseTime.getTime()); document.getElementById('date').value=`${local.getFullYear()}-${String(local.getMonth()+1).padStart(2,'0')}-${String(local.getDate()).padStart(2,'0')}`; document.getElementById('time').value=`${String(local.getHours()).padStart(2,'0')}:${String(local.getMinutes()).padStart(2,'0')}:${String(local.getSeconds()).padStart(2,'0')}`; }
+function setInputsFrom(dateObj){ const local=new Date(dateObj.getTime()); document.getElementById('date').value=`${local.getFullYear()}-${String(local.getMonth()+1).padStart(2,'0')}-${String(local.getDate()).padStart(2,'0')}`; document.getElementById('time').value=`${String(local.getHours()).padStart(2,'0')}:${String(local.getMinutes()).padStart(2,'0')}:${String(local.getSeconds()).padStart(2,'0')}`; }
+function setInputsFromBase(){ setInputsFrom(baseTime); }
 
 // Projection + draw
 function project(az, alt){ const theta=(Math.PI/2 - alt), maxTheta=fov/2; if(theta>maxTheta) return null; const r=(theta/maxTheta)*R*scale;
@@ -304,8 +316,12 @@ function drawEcliptic(){ if(!showEcliptic) return; ctx.strokeStyle="#ffcf70"; ct
 function drawStars(){ if(!showStars) return; const t=currentTime(); const jd=jdFromDate(t); currentLST=lst(jd, lon); for(const s of stars){ if(s.mag>magLimit) continue; const {az,alt}=azAltFromRADec(s.ra,s.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; const size=clamp(2.4 - 0.30*s.mag,0.6,2.4); const alpha=clamp(1.05 - 0.12*s.mag,0.25,0.9); ctx.fillStyle=`rgba(210,230,255,${alpha.toFixed(2)})`; ctx.beginPath(); ctx.arc(p.x,p.y,size,0,2*Math.PI); ctx.fill(); } }
 function drawDSOOnSky(){ if(!showDSO) return; ctx.save(); ctx.fillStyle="#a8ffe0"; ctx.strokeStyle="#a8ffe0"; ctx.lineWidth=1; ctx.font="10px system-ui"; for(const d of DSO){ const {az,alt}=azAltFromRADec(d.ra,d.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; ctx.beginPath(); ctx.arc(p.x,p.y,3,0,2*Math.PI); ctx.stroke(); if(showLabels) ctx.fillText(`⌾ ${d.name}`, p.x+6, p.y-6);} ctx.restore(); }
 function drawConstellations(){ if(!showConst) return; ctx.save(); ctx.strokeStyle="rgba(130,170,255,0.6)"; ctx.lineWidth=0.9; ctx.setLineDash([6,4]); for(const C of CONSTLINES){ for(const poly of C.lines){ let first=true; ctx.beginPath(); for(const [ra,dec] of poly){ const {az,alt}=azAltFromRADec(ra,dec,lat,currentLST); if(alt<=0) { first=true; continue; } const p=project(az,alt); if(!p){ first=true; continue; } if(first){ ctx.moveTo(p.x,p.y); first=false; } else ctx.lineTo(p.x,p.y); } ctx.stroke(); } } ctx.setLineDash([]); ctx.restore(); }
-function drawRadiants(){ if(!showRadiants) return; const t=currentTime(); const doy = (d)=>{ const start=new Date(d.getFullYear(),0,1); return Math.floor((d-start)/(24*3600*1000))+1; }; const md2doy=(md,yr)=>{ const [m,dd]=md.split('-').map(Number); return doy(new Date(yr,m-1,dd)); };
-  const yr=t.getFullYear(); const today=doy(t);
+
+// Radiants overlay
+function drawRadiants(){ if(!showRadiants) return; const t=currentTime(); const yr=t.getFullYear();
+  const doy = (d)=>{ const start=new Date(d.getFullYear(),0,1); return Math.floor((d-start)/(24*3600*1000))+1; };
+  const md2doy=(md,yr)=>{ const [m,dd]=md.split('-').map(Number); return doy(new Date(yr,m-1,dd)); };
+  const today=doy(t);
   for(const R of RADIANTS){ const pday=md2doy(R.peak, yr); const delta=Math.min(Math.abs(pday-today), 365-Math.abs(pday-today)); if(delta>10) continue;
     const {az,alt}=azAltFromRADec(R.ra,R.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue;
     const pulse = (1+Math.sin(Date.now()/600))/2;
@@ -317,7 +333,7 @@ function drawRadiants(){ if(!showRadiants) return; const t=currentTime(); const 
   }
 }
 
-// Planets (Mercury→Saturn) — low-precision J2000 elements
+// Planets (Mercury→Neptune) and Sun/Moon
 const PLANETS=[
  {key:"Mercury", sym:"☿", color:"#ffd780", size:3.5, el:{ a:[0.38709927, 0.00000037], e:[0.20563593, 0.00001906], I:[7.00497902,-0.00594749], L:[252.25032350,149472.67411175], wbar:[77.45779628,0.16047689], O:[48.33076593,-0.12534081] } },
  {key:"Venus",   sym:"♀", color:"#ffd4c2", size:4.0, el:{ a:[0.72333566, 0.00000390], e:[0.00677672,-0.00004107], I:[3.39467605,-0.00078890], L:[181.97909950,58517.81538729], wbar:[131.60246718,0.00268329], O:[76.67984255,-0.27769418] } },
@@ -325,9 +341,11 @@ const PLANETS=[
  {key:"Mars",    sym:"♂", color:"#ff9b6b", size:3.8, el:{ a:[1.52371034, 0.00001847], e:[0.09339410,0.00007882], I:[1.84969142,-0.00813131], L:[-4.55343205,19140.30268499], wbar:[-23.94362959,0.44441088], O:[49.55953891,-0.29257343] } },
  {key:"Jupiter", sym:"♃", color:"#ffdca8", size:5.0, el:{ a:[5.20288700,-0.00011607], e:[0.04838624,-0.00013253], I:[1.30439695,-0.00183714], L:[34.39644051,3034.74612775], wbar:[14.72847983,0.21252668], O:[100.47390909,0.20469106] } },
  {key:"Saturn",  sym:"♄", color:"#ffe9a6", size:4.8, el:{ a:[9.53667594,-0.00125060], e:[0.05386179,-0.00050991], I:[2.48599187,0.00193609], L:[49.95424423,1222.49362201], wbar:[92.59887831,-0.41897216], O:[113.66242448,-0.28867794] } },
+ {key:"Uranus",  sym:"♅", color:"#a8f7ff", size:4.2, el:{ a:[19.18916464,-0.00196176], e:[0.04725744,-0.00004397], I:[0.77263783,-0.00242939], L:[313.23810451,428.48202785], wbar:[170.95427630,0.40805281], O:[74.01692503,0.04240589] } },
+ {key:"Neptune", sym:"♆", color:"#9fd0ff", size:4.0, el:{ a:[30.06992276, 0.00026291], e:[0.00859048, 0.00005105], I:[1.77004347, 0.00035372], L:[-55.12002969,218.45945325], wbar:[44.96476227, 0.32241464], O:[131.78422574, -0.00508664] } }
 ];
 function centuriesSinceJ2000(jd){ return (jd-2451545.0)/36525.0; }
-function keplerE(M,e){ let E=M, d; for(let i=0;i<8;i++){ d=(E - e*Math.sin(E) - M); E=E - d/(1 - e*Math.cos(E)); if(Math.abs(d)<1e-12) break; } return E; }
+function keplerE(M,e){ let E=M, d; for(let i=0;i<10;i++){ d=(E - e*Math.sin(E) - M); E=E - d/(1 - e*Math.cos(E)); if(Math.abs(d)<1e-12) break; } return E; }
 function planetHelioEclRect(el,T){
   const a=el.a[0]+el.a[1]*T, e=el.e[0]+el.e[1]*T, I=(el.I[0]+el.I[1]*T)*DEG, L=(el.L[0]+el.L[1]*T)*DEG, wbar=(el.wbar[0]+el.wbar[1]*T)*DEG, O=(el.O[0]+el.O[1]*T)*DEG;
   const M = mod(L - wbar, 2*Math.PI);
@@ -350,10 +368,98 @@ function planetGeoEcl(planet, jd){
   const lam = mod(Math.atan2(y,x), 2*Math.PI); const beta = Math.atan2(z, Math.sqrt(x*x+y*y));
   return {lam, beta};
 }
+function sunGeoEcl(jd){
+  const T=centuriesSinceJ2000(jd);
+  const e = planetHelioEclRect(PLANETS[2].el, T);
+  const lam = mod(Math.atan2(-e.y, -e.x), 2*Math.PI);
+  return {lam, beta:0};
+}
+
+// Moon (simplified)
+function moonGeoEcl(jd){
+  const T=(jd-2451545.0)/36525.0;
+  const L0 = mod((218.3164477 + 481267.88123421*T - 0.0015786*T*T + T*T*T/538841 - T*T*T*T/65194000)*DEG, 2*Math.PI);
+  const D  = mod((297.8501921 + 445267.1114034*T - 0.0018819*T*T + T*T*T/545868 - T*T*T*T/113065000)*DEG,2*Math.PI);
+  const M  = mod((357.5291092 + 35999.0502909*T - 0.0001536*T*T + T*T*T/24490000)*DEG,2*Math.PI);
+  const Mp = mod((134.9633964 + 477198.8675055*T + 0.0087414*T*T + T*T*T/69699 - T*T*T*T/14712000)*DEG,2*Math.PI);
+  const F  = mod((93.2720950  + 483202.0175233*T - 0.0036539*T*T - T*T*T/3526000 + T*T*T*T/863310000)*DEG,2*Math.PI);
+
+  // Periodic terms (subset)
+  let lon = 0;
+  lon += 6288774*Math.sin(Mp);
+  lon += 1274027*Math.sin(2*D - Mp);
+  lon += 658314*Math.sin(2*D);
+  lon += 213618*Math.sin(2*Mp);
+  lon -= 185116*Math.sin(M) ; // Sun anomaly
+  lon -= 114332*Math.sin(2*F);
+  lon += 58793*Math.sin(2*D - 2*Mp);
+  lon += 57066*Math.sin(2*D - M - Mp);
+  lon += 53322*Math.sin(2*D + Mp);
+  lon += 45758*Math.sin(2*D - M);
+  lon -= 40923*Math.sin(M - Mp);
+  lon -= 34720*Math.sin(D);
+  lon -= 30383*Math.sin(M + Mp);
+  lon += 15327*Math.sin(2*D - 2*F);
+  lon -= 12528*Math.sin(Mp + 2*F);
+  lon += 10980*Math.sin(Mp - 2*F);
+
+  lon = lon * 1e-6 * DEG;
+  const lam = mod(L0 + lon, 2*Math.PI);
+
+  // Latitude approx
+  let lat = 0;
+  lat += 5128122*Math.sin(F);
+  lat += 280602*Math.sin(Mp + F);
+  lat += 277693*Math.sin(Mp - F);
+  lat += 173237*Math.sin(2*D - F);
+  lat += 55413*Math.sin(2*D - Mp + F);
+  lat += 46271*Math.sin(2*D - Mp - F);
+  lat += 32573*Math.sin(2*D + F);
+  lat += 17198*Math.sin(2*Mp + F);
+  lat += 9266*Math.sin(2*D + Mp - F);
+  lat += 8822*Math.sin(2*Mp - F);
+  lat += 8216*Math.sin(2*D - M - F);
+  lat += 4324*Math.sin(2*D - 2*Mp - F);
+  lat += 4200*Math.sin(2*D + Mp + F);
+  lat = lat * 1e-6 * DEG;
+
+  return {lam, beta: lat};
+}
+
+function phaseIllumination(jd){
+  const s = sunGeoEcl(jd);
+  const m = moonGeoEcl(jd);
+  const D = mod(m.lam - s.lam, 2*Math.PI);
+  const k = (1 - Math.cos(D))/2; // 0 new, 1 full
+  // phase text
+  const deg = D*RAD;
+  let name = "Waxing";
+  if(deg<45) name="New → Waxing Crescent";
+  else if(deg<90) name="Waxing Crescent";
+  else if(deg<135) name="First Quarter";
+  else if(deg<180) name="Waxing Gibbous";
+  else if(deg<225) name="Full";
+  else if(deg<270) name="Waning Gibbous";
+  else if(deg<315) name="Last Quarter";
+  else name="Waning Crescent";
+  return {fraction:k, angle:deg, name};
+}
+
 function drawPlanets(){
   if(!showPlanets) return;
   const t=currentTime(); const jd=jdFromDate(t);
   ctx.save();
+  // Sun and Moon
+  const sun = sunGeoEcl(jd);
+  const sunEq = radecFromEcliptic(sun.lam,0);
+  const sunAltAz = azAltFromRADec(sunEq.ra, sunEq.dec, lat, currentLST);
+  if(sunAltAz.alt>0){ const p=project(sunAltAz.az, sunAltAz.alt); if(p){ ctx.fillStyle="#ffd36e"; ctx.beginPath(); ctx.arc(p.x,p.y,6,0,2*Math.PI); ctx.fill(); if(showLabels){ ctx.font="11px system-ui"; ctx.fillText("☉ Sun", p.x+8, p.y-6);} } }
+  const moon = moonGeoEcl(jd);
+  const moonEq = radecFromEcliptic(moon.lam, moon.beta);
+  const moonAltAz = azAltFromRADec(moonEq.ra, moonEq.dec, lat, currentLST);
+  if(moonAltAz.alt>0){ const p=project(moonAltAz.az, moonAltAz.alt); if(p){ ctx.fillStyle="#dbe7ff"; ctx.beginPath(); ctx.arc(p.x,p.y,5.5,0,2*Math.PI); ctx.fill(); if(showLabels){ ctx.font="11px system-ui"; ctx.fillText("☽ Moon", p.x+8, p.y-6);} } }
+
+  // Classical planets
   for(const P of PLANETS){
     if(P.key==="Earth") continue;
     const {lam,beta}=planetGeoEcl(P, jd);
@@ -366,6 +472,44 @@ function drawPlanets(){
     if(showLabels){ ctx.font="11px system-ui"; ctx.fillText(`${P.sym} ${P.key}`, p.x+8, p.y-6); }
   }
   ctx.restore();
+}
+
+// Rise/Set calculations (simple sweep)
+function timeAtMidnightLocal(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function toLocalISO(d){ return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;}
+function findEventsForDay(d){
+  const start = timeAtMidnightLocal(d);
+  const end = new Date(start.getTime()+24*3600000);
+  const step = 5*60*1000; // 5m
+  const events = {sunrise:null, sunset:null, moonrise:null, moonset:null};
+  let prevSunAlt=null, prevMoonAlt=null, prev=null;
+  for(let t=start.getTime(); t<=end.getTime(); t+=step){
+    const dt=new Date(t); const jd=jdFromDate(dt); const lstNow=lst(jd, lon);
+    // Sun
+    const s=sunGeoEcl(jd), se=radecFromEcliptic(s.lam,0), sAlt=azAltFromRADec(se.ra,se.dec,lat,lstNow).alt*RAD;
+    const sAltCorr = sAlt + 0.833; // depression for sunrise/set
+    // Moon
+    const m=moonGeoEcl(jd), me=radecFromEcliptic(m.lam,m.beta), mAlt=azAltFromRADec(me.ra,me.dec,lat,lstNow).alt*RAD;
+    const mAltCorr = mAlt + 0.3;
+    if(prev!==null){
+      if(events.sunrise==null && prevSunAlt<0 && sAltCorr>=0) events.sunrise = new Date(t-step/2);
+      if(events.sunset==null && prevSunAlt>0 && sAltCorr<=0) events.sunset = new Date(t-step/2);
+      if(events.moonrise==null && prevMoonAlt<0 && mAltCorr>=0) events.moonrise = new Date(t-step/2);
+      if(events.moonset==null && prevMoonAlt>0 && mAltCorr<=0) events.moonset = new Date(t-step/2);
+    }
+    prevSunAlt = sAltCorr; prevMoonAlt = mAltCorr; prev=dt;
+  }
+  return events;
+}
+function renderRiseSetPanel(){
+  const d = currentTime();
+  const ev = findEventsForDay(d);
+  const jd=jdFromDate(d); const ph = phaseIllumination(jd);
+  riseSetEl.innerHTML = `
+    <div class="item"><div><strong>Sunrise</strong> ${ev.sunrise? toLocalISO(ev.sunrise):"—"} &nbsp; <strong>Sunset</strong> ${ev.sunset? toLocalISO(ev.sunset):"—"}</div></div>
+    <div class="item"><div><strong>Moonrise</strong> ${ev.moonrise? toLocalISO(ev.moonrise):"—"} &nbsp; <strong>Moonset</strong> ${ev.moonset? toLocalISO(ev.moonset):"—"}</div></div>
+    <div class="item"><div><strong>Moon phase</strong> ${ (ph.fraction*100).toFixed(0)}% • ${ph.name}</div></div>
+  `;
 }
 
 // Launches (unchanged core)
@@ -499,8 +643,8 @@ function renderMeteorPanel(){
     const p=md2doy(r.peak, yr); const delta=Math.min(Math.abs(p-today),365-Math.abs(p-today));
     return {...r, delta};
   }).filter(x=> x.delta<=15).sort((a,b)=>a.delta-b.delta);
-  if(!items.length){ meteorDetails.style.display='none'; return; }
-  meteorDetails.style.display='block';
+  if(!items.length){ document.getElementById('meteorDetails').style.display='none'; return; }
+  document.getElementById('meteorDetails').style.display='block';
   meteorList.innerHTML = items.map(r=>`<div class="item"><div><strong>${r.name}</strong> • peaks ${r.peak} • Δ${r.delta}d</div></div>`).join("");
 }
 
@@ -522,7 +666,7 @@ document.getElementById('togglePlanets').onchange=(e)=>{ showPlanets=e.target.ch
 ["lat","lon","date","time"].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{
   const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00";
   if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); const local=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); baseTime=new Date(local.getTime()); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); }
-  lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; computeISSPasses(); draw(); renderMeteorPanel();
+  lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; computeISSPasses(); draw(); renderMeteorPanel(); renderRiseSetPanel();
 }));
 
 // Time scrubber
@@ -533,8 +677,16 @@ function updateScrubLabel(){
   const s = val; const sign=s>=0?"+":"−"; const as=Math.abs(s); const d=Math.floor(as/86400); const h=Math.floor((as%86400)/3600); const m=Math.floor((as%3600)/60);
   let txt=`${sign}`; if(d) txt+=`${d}d `; if(h||d) txt+=`${h}h `; txt+=`${m}m`; scrubLabel.textContent = txt.trim();
 }
-scrub.oninput=(e)=>{ offsetSeconds=parseInt(e.target.value,10); updateDeltaRead(); draw(); updateScrubLabel(); highlightMiniCalendar(); renderMeteorPanel(); };
+scrub.oninput=(e)=>{ offsetSeconds=parseInt(e.target.value,10); updateDeltaRead(); draw(); updateScrubLabel(); highlightMiniCalendar(); renderMeteorPanel(); renderRiseSetPanel(); setInputsFrom(currentTime()); };
 window.addEventListener('resize', ()=>{ resize(); updateScrubLabel(); });
+
+// Jump buttons
+document.getElementById('jumpMinusDay').onclick=()=>{ offsetSeconds-=86400; clampScrub(); };
+document.getElementById('jumpMinus12h').onclick=()=>{ offsetSeconds-=43200; clampScrub(); };
+document.getElementById('jumpNow').onclick=()=>{ baseTime=new Date(); offsetSeconds=0; setInputsFromBase(); scrub.value=0; updateDeltaRead(); draw(); renderMiniCalendar(); computeISSPasses(); renderMeteorPanel(); renderRiseSetPanel(); };
+document.getElementById('jumpPlus12h').onclick=()=>{ offsetSeconds+=43200; clampScrub(); };
+document.getElementById('jumpPlusDay').onclick=()=>{ offsetSeconds+=86400; clampScrub(); };
+document.getElementById('resetView').onclick=()=>{ yaw=0; pitch=0; scale=1; document.getElementById('zoom').value=1; draw(); };
 
 // Mini calendar (±5 days only; 11 buttons)
 const miniCal=document.getElementById('miniCal'); const calInfo=document.getElementById('calInfo');
@@ -563,7 +715,7 @@ function highlightMiniCalendar(){
     if(i===dayIndex) b.classList.add('active'); else b.classList.remove('active');
   });
 }
-function clampScrub(){ const min=+scrub.min, max=+scrub.max; offsetSeconds = Math.max(min, Math.min(max, offsetSeconds)); scrub.value=offsetSeconds; updateDeltaRead(); draw(); updateScrubLabel(); highlightMiniCalendar(); renderMeteorPanel(); }
+function clampScrub(){ const min=+scrub.min, max=+scrub.max; offsetSeconds = Math.max(min, Math.min(max, offsetSeconds)); scrub.value=offsetSeconds; updateDeltaRead(); draw(); updateScrubLabel(); highlightMiniCalendar(); renderMeteorPanel(); renderRiseSetPanel(); setInputsFrom(currentTime()); }
 
 // Draw loop
 function draw(){
@@ -580,10 +732,10 @@ function init(){
   baseTime = new Date(); setInputsFromBase(); updateDeltaRead();
   resize(); requestAnimationFrame(resize); requestAnimationFrame(()=>requestAnimationFrame(resize));
   window.addEventListener('resize', resize);
-  renderMiniCalendar(); renderDSOList(); updateScrubLabel(); renderMeteorPanel(); draw();
+  renderMiniCalendar(); renderDSOList(); updateScrubLabel(); renderMeteorPanel(); renderRiseSetPanel(); draw();
   fetchLaunches(); loadISS();
 }
-document.getElementById('btnNow').addEventListener('click', ()=>{ baseTime=new Date(); offsetSeconds=0; setInputsFromBase(); scrub.value=0; updateDeltaRead(); draw(); renderMiniCalendar(); computeISSPasses(); renderMeteorPanel(); });
+document.getElementById('btnNow').addEventListener('click', ()=>{ baseTime=new Date(); offsetSeconds=0; setInputsFromBase(); scrub.value=0; updateDeltaRead(); draw(); renderMiniCalendar(); computeISSPasses(); renderMeteorPanel(); renderRiseSetPanel(); });
 document.getElementById('btnGeo').addEventListener('click', ()=>{
   if(!navigator.geolocation){ toast("Geolocation not supported"); return; }
   navigator.geolocation.getCurrentPosition(p=>{
@@ -591,7 +743,7 @@ document.getElementById('btnGeo').addEventListener('click', ()=>{
     document.getElementById('lon').value=p.coords.longitude.toFixed(6);
     const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00";
     if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); baseTime=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); }
-    lon=parseFloat(document.getElementById('lon').value)*DEG; lat=parseFloat(document.getElementById('lat').value)*DEG; draw(); computeISSPasses(); renderMeteorPanel();
+    lon=parseFloat(document.getElementById('lon').value)*DEG; lat=parseFloat(document.getElementById('lat').value)*DEG; draw(); computeISSPasses(); renderMeteorPanel(); renderRiseSetPanel();
   }, _=> toast("Couldn't get location"));
 });
 document.addEventListener('DOMContentLoaded', init);
