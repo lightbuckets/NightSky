@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.14.8 (Canvas Reliability)</title>
+<title>Pocket Planetarium — v1.14.9 (DSO + Launch Restored)</title>
 <style>
 :root{ --bg:#040816; --ink:#eaf2ff; --muted:#a9c2ff; --edge:#1b2d6a; --panel:#0a1240; --accent:#7ee7ff; --warn:#ffd36e; --ok:#a4ffcc; }
 html,body{height:100%;margin:0;background:var(--bg);color:#eaf2ff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -57,6 +57,10 @@ position:relative}
 #redveil{position:fixed;inset:0;pointer-events:none;background:rgba(255,40,40,0.18);opacity:0;transition:.2s;z-index:1000}
 html.night #redveil{opacity:1}
 #toast{position:fixed;left:16px;bottom:16px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:12px;color:#eaf2ff;opacity:0;transform:translateY(8px);transition:.25s}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:10px;align-items:center;background:#0a1338;border:1px solid #1f376e;border-radius:10px;padding:.5rem .6rem}
+.thumb{width:42px;height:42px;border-radius:8px;border:1px solid #1a2f69;object-fit:cover}
+.meta{font-size:12px;color:#a9c2ff}
 </style>
 </head>
 <body>
@@ -64,9 +68,10 @@ html.night #redveil{opacity:1}
 <div id="app">
   <header>
     <div id="brand"><div id="logo"></div><h1>🪐 Pocket Planetarium</h1></div>
-    <span class="badge">v1.14.8</span>
+    <span class="badge">v1.14.9</span>
     <span class="pill">W×H <span id="wh">—</span></span>
     <span class="pill">LST <span id="lstRead">—</span></span>
+    <span id="launchBadge" class="badge" style="display:none">🚀 Launch in <span id="badgeCountdown">—</span></span>
     <span style="flex:1"></span>
     <button class="btn" id="nightToggle">🌘 Night Vision</button>
   </header>
@@ -102,16 +107,45 @@ html.night #redveil{opacity:1}
         <label class="toggle"><input id="labels" type="checkbox" checked/><span>Labels</span></label>
         <label class="toggle"><input id="grid" type="checkbox" checked/><span>Az/Alt grid</span></label>
         <label class="toggle"><input id="ecliptic" type="checkbox" checked/><span>Ecliptic</span></label>
-        <label class="toggle"><input id="mw" type="checkbox" checked/><span>Milky Way glow</span></label>
         <label class="toggle"><input id="constLines" type="checkbox" checked/><span>Constellations</span></label>
       </div>
+    </details>
+
+    <details open>
+      <summary><span class="chev">▶</span> ⌾ Deep-Sky Objects</summary>
+      <div class="row">
+        <div class="field" style="flex:2"><label>Search</label><input id="dsoSearch" placeholder="e.g., Andromeda, Orion…"/></div>
+        <div class="field" style="flex:1"><label>Type</label>
+          <select id="dsoType">
+            <option value="">All types</option>
+            <option>Galaxy</option>
+            <option>Nebula</option>
+            <option>Open Cluster</option>
+            <option>Globular Cluster</option>
+            <option>PN</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1"><label>Max DSO magnitude — ≤ <span id="dsoMagRead">12.0</span></label><input id="dsoMagLimit" type="range" class="range" min="6" max="14" step="0.1" value="12"/></div>
+      </div>
+      <div id="dsoList" class="list"></div>
+    </details>
+
+    <details open>
+      <summary><span class="chev">▶</span> 🚀 Launch Alerts (auto)</summary>
+      <div class="row">
+        <label class="toggle"><input id="launchTrack" type="checkbox" checked/><span>Draw trajectory</span></label>
+        <button id="clearTraj" class="btn">🧹 Clear</button>
+      </div>
+      <div id="launchList"></div>
+      <div class="row"><span class="pill" id="launchStatus">Fetching upcoming SpaceX launches near KSC/VBG…</span></div>
+      <div class="row" style="font-size:12px;color:#a9c2ff">Trajectory draws only if your location is within ~1200 km of the pad.</div>
     </details>
   </aside>
 
   <div id="canvasWrap">
     <canvas id="sky"></canvas>
     <canvas id="overlay"></canvas>
-    <div class="legend"><div><strong>Legend:</strong> ● star, ⌾ DSO, — constellation</div><div>Horizon = circle edge • North ↑</div></div>
+    <div class="legend"><div><strong>Legend:</strong> ● star, ⌾ DSO, — constellation, ⤴︎ launch trajectory (approx)</div><div>Horizon = circle edge • North ↑</div></div>
   </div>
 
   <div id="bottom">
@@ -150,6 +184,7 @@ const DEG=Math.PI/180, RAD=180/Math.PI, clamp=(x,a,b)=>Math.max(a,Math.min(b,x))
 function jdFromDate(date){ return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds())/86400000 + 2440587.5; }
 function gmst(jd){ const T=(jd-2451545.0)/36525.0; let s=67310.54841 + (876600*3600 + 8640184.812866)*T + 0.093104*T*T - 6.2e-6*T*T*T; return mod(s,86400)/240.0*DEG; }
 function lst(jd, lonRad){ return mod(gmst(jd) + lonRad, 2*Math.PI); }
+function radecFromEcliptic(lam, beta){ const eps=23.43928*DEG; const sinDec=Math.sin(beta)*Math.cos(eps)+Math.cos(beta)*Math.sin(eps)*Math.sin(lam); const dec=Math.asin(clamp(sinDec,-1,1)); const y=Math.sin(lam)*Math.cos(eps)-Math.tan(beta)*Math.sin(eps); const x=Math.cos(lam); return {ra:mod(Math.atan2(y,x),2*Math.PI), dec}; }
 function azAltFromRADec(ra, dec, lat, lstRad){ const H=mod(lstRad - ra,2*Math.PI); const sinAlt=Math.sin(dec)*Math.sin(lat)+Math.cos(dec)*Math.cos(lat)*Math.cos(H); const alt=Math.asin(clamp(sinAlt,-1,1)); const cosAz=(Math.sin(dec)-Math.sin(alt)*Math.sin(lat))/(Math.cos(alt)*Math.cos(lat)); let az=Math.acos(clamp(cosAz,-1,1)); if(Math.sin(H)>0) az=2*Math.PI-az; return {az,alt}; }
 function seededRandom(seed){ let t=seed>>>0; return function(){ t=(t+0x6D2B79F5)|0; let r=Math.imul(t^(t>>>15),1|t); r^=r+Math.imul(r^(t>>>7),61|t); return ((r^(r>>>14))>>>0)/4294967296; };}
 function makeStars(n=6500, seed=2025){ const rnd=seededRandom(seed), out=[]; for(let i=0;i<n;i++){ const u=rnd(), v=rnd(), w=rnd(); const ra=2*Math.PI*u; const x=Math.acos(1-2*v)-Math.PI/2; const bias=0.35*Math.sin(ra*0.5)+0.45*Math.sin((ra+1.2)*1.0); const dec=clamp(x+bias*DEG*15,-Math.PI/2,Math.PI/2); const mag=1.3 + -2*Math.log10(0.02+w*w); out.push({ra,dec,mag}); } return out; }
@@ -158,18 +193,27 @@ function makeStars(n=6500, seed=2025){ const rnd=seededRandom(seed), out=[]; for
 const stars=makeStars();
 function raRad(h,m){ return ((h*15)+(m*0.25))*DEG; }
 const DSO=[
- {name:"M31 Andromeda",ra:raRad(0,42),dec:41.3*DEG,type:"Galaxy",mag:3.4},
- {name:"M42 Orion",ra:raRad(5,35),dec:-5.5*DEG,type:"Nebula",mag:4.0}
+ {name:"M31 Andromeda",ra:raRad(0,42),dec:41.3*DEG,type:"Galaxy",mag:3.4,dist:"2.5 Mly",size:"190′×60′"},
+ {name:"M42 Orion",ra:raRad(5,35),dec:-5.5*DEG,type:"Nebula",mag:4.0,dist:"1.3 kly",size:"65′×60′"},
+ {name:"M45 Pleiades",ra:raRad(3,47),dec:24*DEG,type:"Open Cluster",mag:1.6,size:"110′"},
+ {name:"M13 Hercules",ra:raRad(16,41),dec:36.5*DEG,type:"Globular Cluster",mag:5.8,size:"20′"},
+ {name:"NGC 7000 North America", ra: raRad(20,58), dec: 44*DEG, type:"Nebula", mag:4, size:"120′×100′"},
+ {name:"M57 Ring",ra:raRad(18,53),dec:33*DEG,type:"PN",mag:8.8,size:"1.5′"}
 ];
+
+// Launch sites
+const KSC={name:"KSC/Cape", lat:28.6084, lon:-80.6043};
+const VBG={name:"Vandenberg", lat:34.632, lon:-120.611};
 
 // DOM
 const sky=document.getElementById('sky'), ol=document.getElementById('overlay'), wrap=document.getElementById('canvasWrap');
 const ctx=sky.getContext('2d'), octx=ol.getContext('2d');
 const whEl=document.getElementById('wh'), lstEl=document.getElementById('lstRead'), clockRead=document.getElementById('clockRead'), deltaRead=document.getElementById('deltaRead');
+const launchBadge=document.getElementById('launchBadge'), badgeCountdown=document.getElementById('badgeCountdown'), launchStatus=document.getElementById('launchStatus'), launchList=document.getElementById('launchList');
 let W=0,H=0,R=0, scale=1, fov=180*DEG; let lat=33.422*DEG, lon=-111.822*DEG;
 let baseTime=new Date(), offsetSeconds=0, yaw=0, pitch=0, mirror=false;
 let showLabels=true, showGrid=true, showEcliptic=true, showConst=true; let magLimit=6.5;
-let currentLST=0;
+let currentLST=0; let drawLaunchTrack=true; let launches=[], activeId=null;
 
 // Sizing
 function safeSize(){ let w=wrap.clientWidth, h=wrap.clientHeight; if(!w||!h){ w=Math.max(640, Math.floor(window.innerWidth*0.9)); h=Math.max(520, Math.floor(window.innerHeight*0.6)); wrap.style.minHeight=h+'px'; } return {w,h}; }
@@ -190,14 +234,111 @@ function drawBackground(){ ctx.clearRect(0,0,W,H); const g=ctx.createRadialGradi
   ctx.strokeStyle="#203456"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(W/2,H/2,R*scale,0,2*Math.PI); ctx.stroke(); const n=project(0,0); if(n){ ctx.fillStyle="#9bb2da"; ctx.font="12px system-ui"; ctx.fillText("N", n.x-3, n.y-6); } }
 function drawGrid(){ if(!showGrid) return; ctx.strokeStyle="#1f3358"; ctx.lineWidth=0.9; ctx.setLineDash([4,6]); ctx.beginPath(); for(let alt=75*DEG; alt>0; alt-=15*DEG){ const theta=(Math.PI/2 - alt); const r=(theta/(fov/2))*R*scale; ctx.moveTo(W/2+r, H/2); ctx.arc(W/2,H/2,r,0,2*Math.PI); } ctx.stroke(); ctx.setLineDash([]);
   ctx.strokeStyle="#25406b"; for(let az=0; az<360; az+=30){ const a=az*DEG; const p1=project(a,0.001), p2=project(a,Math.PI/2-0.001); if(p1&&p2){ ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); if(showLabels){ ctx.fillStyle="#7ea1d6"; ctx.font="11px system-ui"; ctx.fillText(`${az}°`, p1.x+4, p1.y+4);} } } }
+function drawEcliptic(){ if(!showEcliptic) return; ctx.strokeStyle="#ffcf70"; ctx.lineWidth=1.2; ctx.setLineDash([6,4]); ctx.beginPath(); for(let L=0;L<=360;L+=2){ const {ra,dec}=radecFromEcliptic(L*DEG,0); const {az,alt}=azAltFromRADec(ra,dec,lat,currentLST); const p=project(az,alt); if(!p) continue; if(L===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); } ctx.stroke(); ctx.setLineDash([]); }
 function drawStars(){ const t=currentTime(); const jd=jdFromDate(t); currentLST=lst(jd, lon); for(const s of stars){ if(s.mag>magLimit) continue; const {az,alt}=azAltFromRADec(s.ra,s.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; const size=clamp(2.6 - 0.32*s.mag,0.6,2.6); const alpha=clamp(1.1 - 0.12*s.mag,0.25,0.95); ctx.fillStyle=`rgba(210,230,255,${alpha.toFixed(2)})`; ctx.beginPath(); ctx.arc(p.x,p.y,size,0,2*Math.PI); ctx.fill(); } }
+function drawDSOOnSky(){ ctx.save(); ctx.fillStyle="#a8ffe0"; ctx.strokeStyle="#a8ffe0"; ctx.lineWidth=1; ctx.font="11px system-ui"; for(const d of DSO){ const {az,alt}=azAltFromRADec(d.ra,d.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; ctx.beginPath(); ctx.arc(p.x,p.y,3.5,0,2*Math.PI); ctx.stroke(); if(showLabels) ctx.fillText(`⌾ ${d.name}`, p.x+6, p.y-6);} ctx.restore(); }
+function drawConstellations(){ /* placeholder: keep wire for future */ }
 
-function draw(){
-  const t=currentTime(); const jd=jdFromDate(t); currentLST=lst(jd, lon);
-  const LSThr=(mod(currentLST,2*Math.PI)*12/Math.PI); const h=Math.floor(LSThr), m=Math.floor((LSThr-h)*60);
-  lstEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-  clockRead.textContent = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}`;
-  drawBackground(); drawGrid(); drawStars();
+// DSO panel
+function dsoThumbSVG(type){ const colors={Galaxy:"#9ad1ff",Nebula:"#a4ffcc","Open Cluster":"#ffe6a3","Globular Cluster":"#ffd36e",PN:"#b6a0ff"}; const symbol= type==="Galaxy" ? "<ellipse cx='21' cy='21' rx='14' ry='7' fill='none' stroke='white' stroke-width='1.5'/>" : type==="Nebula" ? "<circle cx='21' cy='21' r='12' fill='url(#g)'/>" : "<g><circle cx='12' cy='18' r='2' fill='white'/><circle cx='20' cy='24' r='2' fill='white'/><circle cx='28' cy='16' r='2' fill='white'/></g>"; return `data:image/svg+xml;utf8,`+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 42'><defs><radialGradient id='g'><stop offset='0%' stop-color='${colors[type]||"#9ad1ff"}' stop-opacity='0.9'/><stop offset='100%' stop-color='${colors[type]||"#9ad1ff"}' stop-opacity='0.0'/></radialGradient></defs><rect width='42' height='42' rx='8' ry='8' fill='#08133a'/>${symbol}</svg>`); }
+function renderDSOList(){ const list=document.getElementById('dsoList'); if(!list) return; const q=(document.getElementById('dsoSearch').value||"").toLowerCase(); const typ=document.getElementById('dsoType').value; const mlim=parseFloat(document.getElementById('dsoMagLimit').value||"12");
+  const filtered = DSO.filter(o=> (typ? o.type===typ : true) && (o.mag==null || o.mag<=mlim) && (q? o.name.toLowerCase().includes(q) : true) );
+  const html = filtered.map(o=>{ const img=dsoThumbSVG(o.type); const meta = `${o.type}${o.mag? ` • mag ${o.mag}`:""}${o.size? ` • ${o.size}`:""}${o.dist? ` • ${o.dist}`:""}`; return `<div class="item"><img class="thumb" src="${img}"/><div><div><strong>${o.name}</strong></div><div class="meta">${meta}</div></div></div>`; }).join("");
+  list.innerHTML = html || "<div class='item'><div>No results.</div></div>"; document.getElementById('dsoMagRead').textContent = mlim.toFixed(1);
+}
+document.addEventListener('input', (e)=>{ if(e.target && (e.target.id==='dsoSearch' || e.target.id==='dsoType' || e.target.id==='dsoMagLimit')) renderDSOList(); });
+
+// Launches
+function distanceKm(φ1,λ1,φ2,λ2){ const dφ=φ2-φ1, dλ=λ2-λ1; const a=Math.sin(dφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(dλ/2)**2; return 2*6371*Math.asin(Math.min(1,Math.sqrt(a))); }
+function bearingTo(lat2, lon2){ const φ1=lat, λ1=lon, φ2=lat2, λ2=lon2; const y=Math.sin(λ2-λ1)*Math.cos(φ2); const x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1); return mod(Math.atan2(y,x),2*Math.PI); }
+function classifyAzimuth(site, orbit){ const o=(orbit||"").toUpperCase(); if(site.name.includes("Vandenberg")){ if(o.includes("SSO")||o.includes("POL")) return 190*DEG; return 200*DEG; } else { if(o.includes("GTO")) return 95*DEG; if(o.includes("ISS")||o.includes("LEO")) return 55*DEG; return 80*DEG; } }
+function softstep(x){ return 1/(1+Math.exp(-x)); }
+function visibleLaunchFromHere(L){ const d = distanceKm(lat,lon, L.site.lat*DEG, L.site.lon*DEG); return d <= 1200; }
+function trajPointsForLaunch(L){
+  const brObs = bearingTo(L.site.lat*DEG, L.site.lon*DEG); const azNom = classifyAzimuth(L.site, L.orbit);
+  const dist = distanceKm(lat,lon, L.site.lat*DEG, L.site.lon*DEG);
+  const altMax = dist<600? 70*DEG : dist<1100? 45*DEG : dist<1800? 25*DEG : 12*DEG;
+  const spanMin = 18; const pts=[];
+  for(let m=-2; m<=spanMin; m+=0.5){ const t = m; const up = softstep((t-2.5)*0.9); const down = 1 - 0.25*softstep((t-9)*0.7); const alt = clamp((altMax * up * down), 3*DEG, Math.PI/2); const drift = clamp((t+2)/10, 0, 1); const az = mod(brObs*(1-drift) + azNom*drift, 2*Math.PI); const p=project(az, alt); if(p) pts.push({x:p.x,y:p.y, tMin:m}); }
+  return pts;
+}
+function drawLaunchTrajectory(){
+  if(!drawLaunchTrack || !launches.length || !activeId) return;
+  const L = launches.find(x=> x.id===activeId); if(!L) return;
+  if(!visibleLaunchFromHere(L)) return;
+  const pts = trajPointsForLaunch(L); if(!pts.length) return;
+  octx.save(); octx.clearRect(0,0,ol.width,ol.height); octx.strokeStyle="rgba(255,211,110,0.95)"; octx.lineWidth=1.8; octx.setLineDash([10,5]);
+  octx.beginPath(); octx.moveTo(pts[0].x, pts[0].y); for(let i=1;i<pts.length;i++){ octx.lineTo(pts[i].x, pts[i].y); } octx.stroke(); octx.setLineDash([]);
+  const Lnet = L.net ? L.net.getTime() : currentTime().getTime(); const tNowMin = (currentTime().getTime() - Lnet)/60000;
+  let closest=pts[0]; let dmin=1e9; for(const p of pts){ const d=Math.abs(p.tMin - tNowMin); if(d<dmin){ dmin=d; closest=p; } }
+  if(closest){ octx.fillStyle="#ffd36e"; octx.beginPath(); octx.arc(closest.x, closest.y, 4, 0, 2*Math.PI); octx.fill(); octx.font="11px system-ui"; octx.fillText("⤴︎ Launch (approx)", closest.x+8, closest.y-6); }
+  octx.restore();
+}
+async function fetchLaunches(){
+  try{
+    launchStatus.textContent="Fetching from Launch Library 2…";
+    const url="https://ll.thespacedevs.com/2.2.0/launch/upcoming/?mode=detailed&limit=50&search=SpaceX";
+    const resp=await fetch(url, {headers:{'Accept':'application/json'}});
+    const data=await resp.json();
+    const out=[];
+    for(const L of (data.results||[])){
+      const siteName = (L.pad?.location?.name||"") + " " + (L.pad?.name||"");
+      const isKSC = /Kennedy|Canaveral|Cape/i.test(siteName);
+      const isVBG = /Vandenberg/i.test(siteName);
+      if(!isKSC && !isVBG) continue;
+      const net = L.net ? new Date(L.net) : null;
+      const wend = L.window_end ? new Date(L.window_end) : (net? new Date(net.getTime()+60*60000): null);
+      out.push({ site: isKSC? KSC : VBG, id:L.id, name:L.name, provider:L.launch_service_provider?.name||"", vehicle:L.rocket?.configuration?.full_name||L.rocket?.configuration?.name||"", net, window_end: wend, orbit: L.mission?.orbit?.abbrev || L.mission?.orbit?.name || (L.mission?.name||""), pad: siteName });
+    }
+    const bySite={}; for(const x of out){ const key=x.site.name; if(!bySite[key] || (x.net && bySite[key].net && x.net<bySite[key].net)) bySite[key]=x; }
+    launches = Object.values(bySite).sort((a,b)=> (a.net||0) - (b.net||0));
+    renderLaunchList();
+    launchStatus.textContent = launches.length? "Auto alerts armed (2h prewindow)" : "No upcoming SpaceX launches at KSC/VBG found.";
+  }catch(e){ launchStatus.textContent="Launch fetch failed (offline?)"; console.error(e); }
+}
+function fmtUTC(d){ if(!d) return "TBD"; return d.toISOString().replace('T',' ').slice(0,16)+"Z"; }
+function tminus(to){ const now=new Date(); const ms=(to-now); const sign = ms>=0? "-" : "+"; const s=Math.abs(ms)/1000; const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60); const sec=Math.floor(s%60); return `${sign}${pad(h)}:${pad(m)}:${pad(sec)}`; }
+function renderLaunchList(){
+  if(!launches.length){ launchList.innerHTML=""; return; }
+  const html = launches.map(L=>`<div class="item">
+      <div>
+        <div><strong>${L.name}</strong></div>
+        <div class="meta">${L.provider} • ${L.vehicle} • ${L.pad}</div>
+        <div class="meta">NET ${fmtUTC(L.net)}${L.window_end? ` • window ends ${L.window_end.toISOString().slice(11,16)}Z` : ""} • ${L.orbit||""}</div>
+        <div class="meta">T− <span class="cd" data-id="${L.id}">—:—:—</span></div>
+      </div>
+      <div class="row">
+        <button class="btn" data-jump="${L.id}">View & jump to NET</button>
+      </div>
+    </div>`).join("");
+  launchList.innerHTML = html;
+  launchList.querySelectorAll('button[data-jump]').forEach(b=> b.onclick = ()=>{
+    const L=launches.find(x=>x.id===b.dataset.jump); if(!L||!L.net) return;
+    activeId = L.id; baseTime = new Date(L.net.getTime()); offsetSeconds = 0; setInputsFromBase();
+    const br = bearingTo(L.site.lat*DEG, L.site.lon*DEG); yaw = -br; pitch = 0;
+    document.getElementById('timeScrub').value = 0; updateDeltaRead(); renderMiniCalendar();
+    toast("Jumped to launch NET — trajectory overlay active");
+    draw(); // ensure draw with new time
+  });
+}
+function updateCountdowns(){
+  if(!launches.length){ launchBadge.style.display='none'; return; }
+  let soonest=null;
+  const cds=document.querySelectorAll('.cd');
+  cds.forEach(span=>{
+    const L=launches.find(x=>x.id===span.dataset.id);
+    if(!L || !L.net) { span.textContent="TBD"; return; }
+    span.textContent = tminus(L.net);
+    if(!soonest || L.net < soonest.net) soonest = L;
+  });
+  if(soonest && soonest.net){
+    const now=new Date(); const pre=2*3600000;
+    const inWindow = now>=soonest.net - pre && now <= (soonest.window_end||soonest.net);
+    launchBadge.style.display = inWindow ? 'inline-flex' : 'none';
+    badgeCountdown.textContent = tminus(soonest.net);
+  } else {
+    launchBadge.style.display='none';
+  }
 }
 
 // Controls
@@ -205,7 +346,19 @@ document.getElementById('nightToggle').onclick=()=>{ document.documentElement.cl
 document.getElementById('zoom').oninput=(e)=>{ scale=parseFloat(e.target.value); draw(); };
 document.getElementById('fov').oninput=(e)=>{ fov=parseFloat(e.target.value)*DEG; draw(); };
 document.getElementById('magLimit').oninput=(e)=>{ magLimit=parseFloat(e.target.value); document.getElementById('magRead').textContent=magLimit.toFixed(1); draw(); };
-["lat","lon","date","time"].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{ const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00"; if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); const local=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); baseTime=new Date(local.getTime()); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); } lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; draw(); }));
+document.getElementById('flip').onchange=(e)=>{ mirror=e.target.checked; draw(); };
+document.getElementById('labels').onchange=(e)=>{ showLabels=e.target.checked; draw(); };
+document.getElementById('grid').onchange=(e)=>{ showGrid=e.target.checked; draw(); };
+document.getElementById('ecliptic').onchange=(e)=>{ showEcliptic=e.target.checked; draw(); };
+document.getElementById('constLines').onchange=(e)=>{ showConst=e.target.checked; draw(); };
+
+["lat","lon","date","time"].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{
+  const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00";
+  if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); const local=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); baseTime=new Date(local.getTime()); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); }
+  lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; draw();
+}));
+document.getElementById('launchTrack').onchange=(e)=>{ drawLaunchTrack = e.target.checked; draw(); };
+document.getElementById('clearTraj').onclick=()=>{ activeId=null; octx.clearRect(0,0,ol.width,ol.height); toast("Trajectory cleared"); };
 
 // Time scrubber
 const scrub=document.getElementById('timeScrub'); const scrubLabel=document.getElementById('scrubLabel');
@@ -217,14 +370,6 @@ function updateScrubLabel(){
 }
 scrub.oninput=(e)=>{ offsetSeconds=parseInt(e.target.value,10); updateDeltaRead(); draw(); updateScrubLabel(); highlightMiniCalendar(); };
 window.addEventListener('resize', ()=>{ resize(); updateScrubLabel(); });
-
-// Quick jumps
-document.getElementById('jumpMinusDay').onclick=()=>{ offsetSeconds -= 86400; clampScrub(); };
-document.getElementById('jumpMinus12h').onclick=()=>{ offsetSeconds -= 43200; clampScrub(); };
-document.getElementById('jumpNow').onclick=()=>{ offsetSeconds = 0; clampScrub(); };
-document.getElementById('jumpPlus12h').onclick=()=>{ offsetSeconds += 43200; clampScrub(); };
-document.getElementById('jumpPlusDay').onclick=()=>{ offsetSeconds += 86400; clampScrub(); };
-function clampScrub(){ const min=+scrub.min, max=+scrub.max; offsetSeconds = Math.max(min, Math.min(max, offsetSeconds)); scrub.value=offsetSeconds; updateDeltaRead(); draw(); updateScrubLabel(); highlightMiniCalendar(); }
 
 // Mini calendar
 const miniCal=document.getElementById('miniCal'); const calInfo=document.getElementById('calInfo');
@@ -253,21 +398,28 @@ function highlightMiniCalendar(){
     if(i===dayIndex) b.classList.add('active'); else b.classList.remove('active');
   });
 }
+function clampScrub(){ const min=+scrub.min, max=+scrub.max; offsetSeconds = Math.max(min, Math.min(max, offsetSeconds)); scrub.value=offsetSeconds; updateDeltaRead(); draw(); updateScrubLabel(); highlightMiniCalendar(); }
+
+// Draw loop
+function draw(){
+  const t=currentTime(); const jd=jdFromDate(t); currentLST=lst(jd, lon);
+  const LSThr=(mod(currentLST,2*Math.PI)*12/Math.PI); const h=Math.floor(LSThr), m=Math.floor((LSThr-h)*60);
+  lstEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  clockRead.textContent = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}`;
+  drawBackground(); drawGrid(); drawEcliptic(); drawStars(); drawDSOOnSky();
+  octx.clearRect(0,0,ol.width,ol.height); drawLaunchTrajectory();
+}
+
+// Launch countdown badge ticker
+function updateCountdownsTicker(){ updateCountdowns(); requestAnimationFrame(updateCountdownsTicker); }
 
 // Init
 function init(){
-  // Force an initial time and sync inputs so parsing never hits undefined
-  baseTime = new Date();
-  setInputsFromBase();
-  updateDeltaRead();
-  // Resize a few times to beat late-layout cases
-  resize();
-  requestAnimationFrame(resize);
-  requestAnimationFrame(()=>requestAnimationFrame(resize));
+  baseTime = new Date(); setInputsFromBase(); updateDeltaRead();
+  resize(); requestAnimationFrame(resize); requestAnimationFrame(()=>requestAnimationFrame(resize));
   window.addEventListener('resize', resize);
-  renderMiniCalendar();
-  updateScrubLabel();
-  draw();
+  renderMiniCalendar(); renderDSOList(); updateScrubLabel(); draw();
+  fetchLaunches(); updateCountdownsTicker();
 }
 document.getElementById('btnNow').addEventListener('click', ()=>{ baseTime=new Date(); offsetSeconds=0; setInputsFromBase(); scrub.value=0; updateDeltaRead(); draw(); renderMiniCalendar(); });
 document.getElementById('btnGeo').addEventListener('click', ()=>{
