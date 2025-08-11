@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.14.7 (Jumbo Scrubber)</title>
+<title>Pocket Planetarium — v1.14.8 (Canvas Reliability)</title>
 <style>
 :root{ --bg:#040816; --ink:#eaf2ff; --muted:#a9c2ff; --edge:#1b2d6a; --panel:#0a1240; --accent:#7ee7ff; --warn:#ffd36e; --ok:#a4ffcc; }
 html,body{height:100%;margin:0;background:var(--bg);color:#eaf2ff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -14,7 +14,7 @@ header{grid-column:1/-1;display:flex;align-items:center;gap:12px}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:.3rem .6rem;border-radius:999px;background:#0b1848;border:1px solid #1a2f69;color:#b9c2ff;font-size:12px}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:.28rem .6rem;border:1px solid #2441a0;border-radius:999px;color:#cde0ff;background:#0a1540cc;font-size:12px}
 #left{grid-row:2/4;grid-column:1;background:linear-gradient(180deg,#0b154a,#0a1340 60%,#09102f); border:1px solid var(--edge); border-radius:16px; padding:12px; overflow:auto}
-#canvasWrap{grid-row:2;grid-column:2;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--edge);background: radial-gradient(900px 650px at 50% 50%, #050b1a 0%, #050a17 70%, #04070c 100%)}
+#canvasWrap{grid-row:2;grid-column:2;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--edge);background: radial-gradient(900px 650px at 50% 50%, #050b1a 0%, #050a17 70%, #04070c 100%); min-height:560px}
 #sky{width:100%;height:100%;display:block;cursor:grab}
 #overlay{position:absolute;inset:0;pointer-events:none}
 #bottom{grid-row:3;grid-column:2;display:grid;grid-template-rows:auto auto;gap:12px;align-items:center;background:linear-gradient(180deg,#0a1338 0,#0b1230 100%);border:1px solid var(--edge);border-radius:16px;padding:18px}
@@ -44,7 +44,6 @@ position:relative}
 #scrubTicks{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#9fb7ff;opacity:.9}
 #scrubTicks span{min-width:40px;text-align:center}
 
-/* Mini calendar */
 #miniCal{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%}
 .calbtn{cursor:pointer;border:1px solid #21406e;background:#0b1442;color:#dbe7ff;border-radius:10px;padding:.4rem .6rem;display:flex;flex-direction:column;align-items:center;min-width:58px}
 .calbtn .dow{font-size:10px;color:#a9c2ff}
@@ -57,10 +56,7 @@ position:relative}
 .legend{position:absolute;left:12px;bottom:12px;font-size:12px;color:#a9c2ff;background:#07101cbb;border:1px solid #122341;border-radius:8px;padding:6px 8px}
 #redveil{position:fixed;inset:0;pointer-events:none;background:rgba(255,40,40,0.18);opacity:0;transition:.2s;z-index:1000}
 html.night #redveil{opacity:1}
-
-.list{display:flex;flex-direction:column;gap:8px}
-.item{display:flex;gap:10px;align-items:center;background:#0a1338;border:1px solid #1f376e;border-radius:10px;padding:.5rem .6rem}
-.meta{font-size:12px;color:#a9c2ff}
+#toast{position:fixed;left:16px;bottom:16px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:12px;color:#eaf2ff;opacity:0;transform:translateY(8px);transition:.25s}
 </style>
 </head>
 <body>
@@ -68,7 +64,7 @@ html.night #redveil{opacity:1}
 <div id="app">
   <header>
     <div id="brand"><div id="logo"></div><h1>🪐 Pocket Planetarium</h1></div>
-    <span class="badge">v1.14.7</span>
+    <span class="badge">v1.14.8</span>
     <span class="pill">W×H <span id="wh">—</span></span>
     <span class="pill">LST <span id="lstRead">—</span></span>
     <span style="flex:1"></span>
@@ -110,42 +106,12 @@ html.night #redveil{opacity:1}
         <label class="toggle"><input id="constLines" type="checkbox" checked/><span>Constellations</span></label>
       </div>
     </details>
-
-    <details open>
-      <summary><span class="chev">▶</span> ⌾ Deep-Sky Objects</summary>
-      <div class="row">
-        <div class="field" style="flex:2"><label>Search</label><input id="dsoSearch" placeholder="e.g., Andromeda, Orion…"/></div>
-        <div class="field" style="flex:1"><label>Type</label>
-          <select id="dsoType">
-            <option value="">All types</option>
-            <option>Galaxy</option>
-            <option>Nebula</option>
-            <option>Open Cluster</option>
-            <option>Globular Cluster</option>
-            <option>PN</option>
-          </select>
-        </div>
-        <div class="field" style="flex:1"><label>Max DSO magnitude — ≤ <span id="dsoMagRead">12.0</span></label><input id="dsoMagLimit" type="range" class="range" min="6" max="14" step="0.1" value="12"/></div>
-      </div>
-      <div id="dsoList" class="list"></div>
-    </details>
-
-    <details open>
-      <summary><span class="chev">▶</span> 🚀 Launch Alerts (auto)</summary>
-      <div class="row">
-        <label class="toggle"><input id="launchTrack" type="checkbox" checked/><span>Draw trajectory (visible only if close)</span></label>
-        <button id="clearTraj" class="btn">🧹 Clear</button>
-      </div>
-      <div id="launchList"></div>
-      <div class="row"><span class="pill" id="launchStatus">Fetching SpaceX launches at KSC/VBG…</span></div>
-    </details>
   </aside>
 
   <div id="canvasWrap">
     <canvas id="sky"></canvas>
     <canvas id="overlay"></canvas>
-    <div class="legend"><div><strong>Legend:</strong> ● star, ⌾ DSO, ✴ radiant, — constellation, ⤴︎ launch trajectory (approx)</div><div>Horizon = circle edge • North ↑</div></div>
-    <div id="debug" style="position:absolute;right:10px;top:10px;background:#07101cbb;border:1px solid #122341;border-radius:8px;padding:6px 8px;font-size:12px;color:#cfe1ff;pointer-events:none">debug: —</div>
+    <div class="legend"><div><strong>Legend:</strong> ● star, ⌾ DSO, — constellation</div><div>Horizon = circle edge • North ↑</div></div>
   </div>
 
   <div id="bottom">
@@ -172,82 +138,85 @@ html.night #redveil{opacity:1}
   </div>
 </div>
 
-<div id="toast" style="position:fixed;left:16px;bottom:16px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:12px;color:#eaf2ff;opacity:0;transform:translateY(8px);transition:.25s">—</div>
+<div id="toast">—</div>
 
 <script>
+// Error surfacing
+window.addEventListener('error', e=> toast('JS error: '+(e.message||e)));
+function toast(msg, t=1600){ const el=document.getElementById('toast'); el.textContent=msg; el.style.opacity=1; el.style.transform='translateY(0)'; setTimeout(()=>{ el.style.opacity=0; el.style.transform='translateY(8px)'; }, t); }
+
+// Core math
 const DEG=Math.PI/180, RAD=180/Math.PI, clamp=(x,a,b)=>Math.max(a,Math.min(b,x)), mod=(x,m)=>((x%m)+m)%m, pad=n=>n.toString().padStart(2,'0');
 function jdFromDate(date){ return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds())/86400000 + 2440587.5; }
 function gmst(jd){ const T=(jd-2451545.0)/36525.0; let s=67310.54841 + (876600*3600 + 8640184.812866)*T + 0.093104*T*T - 6.2e-6*T*T*T; return mod(s,86400)/240.0*DEG; }
 function lst(jd, lonRad){ return mod(gmst(jd) + lonRad, 2*Math.PI); }
-function radecFromEcliptic(lam, beta){ const eps=23.43928*DEG; const sinDec=Math.sin(beta)*Math.cos(eps)+Math.cos(beta)*Math.sin(eps)*Math.sin(lam); const dec=Math.asin(clamp(sinDec,-1,1)); const y=Math.sin(lam)*Math.cos(eps)-Math.tan(beta)*Math.sin(eps); const x=Math.cos(lam); return {ra:mod(Math.atan2(y,x),2*Math.PI), dec}; }
 function azAltFromRADec(ra, dec, lat, lstRad){ const H=mod(lstRad - ra,2*Math.PI); const sinAlt=Math.sin(dec)*Math.sin(lat)+Math.cos(dec)*Math.cos(lat)*Math.cos(H); const alt=Math.asin(clamp(sinAlt,-1,1)); const cosAz=(Math.sin(dec)-Math.sin(alt)*Math.sin(lat))/(Math.cos(alt)*Math.cos(lat)); let az=Math.acos(clamp(cosAz,-1,1)); if(Math.sin(H)>0) az=2*Math.PI-az; return {az,alt}; }
-function sunEquatorial(jd){ function planetPositionEcliptic(){ const T=(jd-2451545.0)/36525.0; const a=1.00000261,e=0.01671123,I=(-0.00001531)*DEG,L=(100.46457166+36000.770*T)*DEG,lp=(102.93768193)*DEG,o=0; const M=mod(L - lp, 2*Math.PI); let E=M; for(let i=0;i<6;i++) E = M + e*Math.sin(E); const nu=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2)); const r=a*(1 - e*Math.cos(E)); const x=r*(Math.cos(o)*Math.cos(nu+lp-o) - Math.sin(o)*Math.sin(nu+lp-o)*Math.cos(I)); const y=r*(Math.sin(o)*Math.cos(nu+lp-o) + Math.cos(o)*Math.sin(nu+lp-o)*Math.cos(I)); const z=r*(Math.sin(nu+lp-o)*Math.sin(I)); return {x,y,z}; }
-  const e=planetPositionEcliptic(); const x=-e.x, y=-e.y, z=-e.z; const eps=23.43928*DEG; const xe=x; const ye=y*Math.cos(eps) - z*Math.sin(eps); const ze=y*Math.sin(eps) + z*Math.cos(eps); const ra = mod(Math.atan2(ye, xe), 2*Math.PI); const dec = Math.atan2(ze, Math.hypot(xe,ye)); return {ra, dec}; }
 function seededRandom(seed){ let t=seed>>>0; return function(){ t=(t+0x6D2B79F5)|0; let r=Math.imul(t^(t>>>15),1|t); r^=r+Math.imul(r^(t>>>7),61|t); return ((r^(r>>>14))>>>0)/4294967296; };}
 function makeStars(n=6500, seed=2025){ const rnd=seededRandom(seed), out=[]; for(let i=0;i<n;i++){ const u=rnd(), v=rnd(), w=rnd(); const ra=2*Math.PI*u; const x=Math.acos(1-2*v)-Math.PI/2; const bias=0.35*Math.sin(ra*0.5)+0.45*Math.sin((ra+1.2)*1.0); const dec=clamp(x+bias*DEG*15,-Math.PI/2,Math.PI/2); const mag=1.3 + -2*Math.log10(0.02+w*w); out.push({ra,dec,mag}); } return out; }
+
+// Data
 const stars=makeStars();
 function raRad(h,m){ return ((h*15)+(m*0.25))*DEG; }
 const DSO=[
  {name:"M31 Andromeda",ra:raRad(0,42),dec:41.3*DEG,type:"Galaxy",mag:3.4},
  {name:"M42 Orion",ra:raRad(5,35),dec:-5.5*DEG,type:"Nebula",mag:4.0}
 ];
+
+// DOM
 const sky=document.getElementById('sky'), ol=document.getElementById('overlay'), wrap=document.getElementById('canvasWrap');
 const ctx=sky.getContext('2d'), octx=ol.getContext('2d');
 const whEl=document.getElementById('wh'), lstEl=document.getElementById('lstRead'), clockRead=document.getElementById('clockRead'), deltaRead=document.getElementById('deltaRead');
 let W=0,H=0,R=0, scale=1, fov=180*DEG; let lat=33.422*DEG, lon=-111.822*DEG;
 let baseTime=new Date(), offsetSeconds=0, yaw=0, pitch=0, mirror=false;
-let showLabels=true, showGrid=true, showEcliptic=true, showMW=true, showConst=true; let magLimit=6.5;
+let showLabels=true, showGrid=true, showEcliptic=true, showConst=true; let magLimit=6.5;
 let currentLST=0;
 
-function safeSize(){ let w=wrap.clientWidth, h=wrap.clientHeight; if(!w||!h){ w=Math.max(640, Math.floor(window.innerWidth*0.9)); h=Math.max(380, Math.floor(window.innerHeight*0.6)); wrap.style.minHeight=h+'px'; } return {w,h}; }
-function resize(){ const dpr=Math.max(1,Math.min(2.5,window.devicePixelRatio||1)); const s=safeSize(); W=s.w; H=s.h; if(!W||!H){ W=960; H=540; } R=Math.min(W,H)/2;
+// Sizing
+function safeSize(){ let w=wrap.clientWidth, h=wrap.clientHeight; if(!w||!h){ w=Math.max(640, Math.floor(window.innerWidth*0.9)); h=Math.max(520, Math.floor(window.innerHeight*0.6)); wrap.style.minHeight=h+'px'; } return {w,h}; }
+function resize(){ const dpr=Math.max(1,Math.min(2.5,window.devicePixelRatio||1)); const s=safeSize(); W=s.w; H=s.h; if(!W||!H){ W=960; H=560; } R=Math.min(W,H)/2;
   sky.width=Math.floor(W*dpr); sky.height=Math.floor(H*dpr); ol.width=sky.width; ol.height=sky.height;
   sky.style.width=W+'px'; sky.style.height=H+'px'; ol.style.width=W+'px'; ol.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0); octx.setTransform(dpr,0,0,dpr,0,0); whEl.textContent=W+'×'+H; draw(true); }
 
-function jdFromDate(date){ return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds())/86400000 + 2440587.5; }
-function gmst(jd){ const T=(jd-2451545.0)/36525.0; let s=67310.54841 + (876600*3600 + 8640184.812866)*T + 0.093104*T*T - 6.2e-6*T*T*T; return mod(s,86400)/240.0*DEG; }
-function lst(jd, lonRad){ return mod(gmst(jd) + lonRad, 2*Math.PI); }
-function azAltFromRADec(ra, dec, lat, lstRad){ const H=mod(lstRad - ra,2*Math.PI); const sinAlt=Math.sin(dec)*Math.sin(lat)+Math.cos(dec)*Math.cos(lat)*Math.cos(H); const alt=Math.asin(Math.max(-1,Math.min(1,sinAlt))); const cosAz=(Math.sin(dec)-Math.sin(alt)*Math.sin(lat))/(Math.cos(alt)*Math.cos(lat)); let az=Math.acos(Math.max(-1,Math.min(1,cosAz))); if(Math.sin(H)>0) az=2*Math.PI-az; return {az,alt}; }
-
+// Time
 function currentTime(){ return new Date(baseTime.getTime() + offsetSeconds*1000); }
-function pad(n){ return n.toString().padStart(2,'0'); }
 function updateDeltaRead(){ const s=Math.abs(offsetSeconds); const sign=offsetSeconds>=0?"+":"−"; const d=Math.floor(s/86400); const h=Math.floor((s%86400)/3600); const m=Math.floor((s%3600)/60); let txt=`${sign}`; if(d) txt+=`${d}d `; if(h) txt+=`${h}h `; txt+=`${m}m`; deltaRead.textContent=txt; }
+function setInputsFromBase(){ const local=new Date(baseTime.getTime()); document.getElementById('date').value=`${local.getFullYear()}-${String(local.getMonth()+1).padStart(2,'0')}-${String(local.getDate()).padStart(2,'0')}`; document.getElementById('time').value=`${String(local.getHours()).padStart(2,'0')}:${String(local.getMinutes()).padStart(2,'0')}:${String(local.getSeconds()).padStart(2,'0')}`; }
 
+// Projection + draw
 function project(az, alt){ const theta=(Math.PI/2 - alt), maxTheta=fov/2; if(theta>maxTheta) return null; const r=(theta/maxTheta)*R*scale;
   let x=r*Math.sin(az + yaw), y=-r*Math.cos(az + yaw); const c=Math.cos(pitch); const yy=y*c; if(mirror) x=-x; return {x:W/2+x, y:H/2+yy, r}; }
 function drawBackground(){ ctx.clearRect(0,0,W,H); const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,R*1.12); g.addColorStop(0,"rgba(6,16,30,0)"); g.addColorStop(1,"rgba(0,0,0,0.7)"); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle="#203456"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(W/2,H/2,R*scale,0,2*Math.PI); ctx.stroke(); const n=project(0,0); if(n){ ctx.fillStyle="#9bb2da"; ctx.font="12px system-ui"; ctx.fillText("N", n.x-3, n.y-6); } }
 function drawGrid(){ if(!showGrid) return; ctx.strokeStyle="#1f3358"; ctx.lineWidth=0.9; ctx.setLineDash([4,6]); ctx.beginPath(); for(let alt=75*DEG; alt>0; alt-=15*DEG){ const theta=(Math.PI/2 - alt); const r=(theta/(fov/2))*R*scale; ctx.moveTo(W/2+r, H/2); ctx.arc(W/2,H/2,r,0,2*Math.PI); } ctx.stroke(); ctx.setLineDash([]);
   ctx.strokeStyle="#25406b"; for(let az=0; az<360; az+=30){ const a=az*DEG; const p1=project(a,0.001), p2=project(a,Math.PI/2-0.001); if(p1&&p2){ ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); if(showLabels){ ctx.fillStyle="#7ea1d6"; ctx.font="11px system-ui"; ctx.fillText(`${az}°`, p1.x+4, p1.y+4);} } } }
-function drawStars(){ for(const s of stars){ if(s.mag>magLimit) continue; const ra=s.ra, dec=s.dec; const t=currentTime(); const jd=jdFromDate(t); currentLST=lst(jd, lon); const {az,alt}=azAltFromRADec(ra,dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; const size=Math.max(0.6, 2.6 - 0.32*s.mag); const alpha=Math.max(0.25, 1.1 - 0.12*s.mag); ctx.fillStyle=`rgba(210,230,255,${alpha.toFixed(2)})`; ctx.beginPath(); ctx.arc(p.x,p.y,size,0,2*Math.PI); ctx.fill(); } }
+function drawStars(){ const t=currentTime(); const jd=jdFromDate(t); currentLST=lst(jd, lon); for(const s of stars){ if(s.mag>magLimit) continue; const {az,alt}=azAltFromRADec(s.ra,s.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; const size=clamp(2.6 - 0.32*s.mag,0.6,2.6); const alpha=clamp(1.1 - 0.12*s.mag,0.25,0.95); ctx.fillStyle=`rgba(210,230,255,${alpha.toFixed(2)})`; ctx.beginPath(); ctx.arc(p.x,p.y,size,0,2*Math.PI); ctx.fill(); } }
 
 function draw(){
   const t=currentTime(); const jd=jdFromDate(t); currentLST=lst(jd, lon);
-  const LSThr=( (currentLST%(2*Math.PI)) * 12/Math.PI); const h=Math.floor(LSThr); const m=Math.floor((LSThr-h)*60);
-  document.getElementById('lstRead').textContent = `${pad(h)}:${pad(m)}`;
-  clockRead.textContent = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+  const LSThr=(mod(currentLST,2*Math.PI)*12/Math.PI); const h=Math.floor(LSThr), m=Math.floor((LSThr-h)*60);
+  lstEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  clockRead.textContent = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}`;
   drawBackground(); drawGrid(); drawStars();
 }
 
-function setNow(){ const now=new Date(); baseTime=new Date(now.getTime()); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); draw(); renderMiniCalendar(); }
-function fromInputs(){ const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00"; if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); const local=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); baseTime=new Date(local.getTime()); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); } lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; draw(); renderMiniCalendar(); }
+// Controls
+document.getElementById('nightToggle').onclick=()=>{ document.documentElement.classList.toggle('night'); };
+document.getElementById('zoom').oninput=(e)=>{ scale=parseFloat(e.target.value); draw(); };
+document.getElementById('fov').oninput=(e)=>{ fov=parseFloat(e.target.value)*DEG; draw(); };
+document.getElementById('magLimit').oninput=(e)=>{ magLimit=parseFloat(e.target.value); document.getElementById('magRead').textContent=magLimit.toFixed(1); draw(); };
+["lat","lon","date","time"].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{ const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00"; if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); const local=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); baseTime=new Date(local.getTime()); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); } lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; draw(); }));
 
-// Scrubber label follow
+// Time scrubber
 const scrub=document.getElementById('timeScrub'); const scrubLabel=document.getElementById('scrubLabel');
 function updateScrubLabel(){
-  const min=+scrub.min, max=+scrub.max, val=+scrub.value;
-  const pct=(val-min)/(max-min);
-  const track= scrub.getBoundingClientRect();
-  const x = pct*track.width;
-  scrubLabel.style.left = x+'px';
-  // Label content = relative time
+  const min=+scrub.min, max=+scrub.max, val=+scrub.value, pct=(val-min)/(max-min);
+  const rect= scrub.getBoundingClientRect(); scrubLabel.style.left = (pct*rect.width)+'px';
   const s = val; const sign=s>=0?"+":"−"; const as=Math.abs(s); const d=Math.floor(as/86400); const h=Math.floor((as%86400)/3600); const m=Math.floor((as%3600)/60);
-  let txt=`${sign}`; if(d) txt+=`${d}d `; if(h||d) txt+=`${h}h `; txt+=`${m}m`;
-  scrubLabel.textContent = txt.trim();
+  let txt=`${sign}`; if(d) txt+=`${d}d `; if(h||d) txt+=`${h}h `; txt+=`${m}m`; scrubLabel.textContent = txt.trim();
 }
 scrub.oninput=(e)=>{ offsetSeconds=parseInt(e.target.value,10); updateDeltaRead(); draw(); updateScrubLabel(); highlightMiniCalendar(); };
-window.addEventListener('resize', updateScrubLabel);
+window.addEventListener('resize', ()=>{ resize(); updateScrubLabel(); });
 
 // Quick jumps
 document.getElementById('jumpMinusDay').onclick=()=>{ offsetSeconds -= 86400; clampScrub(); };
@@ -256,13 +225,6 @@ document.getElementById('jumpNow').onclick=()=>{ offsetSeconds = 0; clampScrub()
 document.getElementById('jumpPlus12h').onclick=()=>{ offsetSeconds += 43200; clampScrub(); };
 document.getElementById('jumpPlusDay').onclick=()=>{ offsetSeconds += 86400; clampScrub(); };
 function clampScrub(){ const min=+scrub.min, max=+scrub.max; offsetSeconds = Math.max(min, Math.min(max, offsetSeconds)); scrub.value=offsetSeconds; updateDeltaRead(); draw(); updateScrubLabel(); highlightMiniCalendar(); }
-
-// Basic controls
-document.getElementById('nightToggle').onclick=()=>{ document.documentElement.classList.toggle('night'); };
-document.getElementById('zoom').oninput=(e)=>{ scale=parseFloat(e.target.value); draw(); };
-document.getElementById('fov').oninput=(e)=>{ fov=parseFloat(e.target.value)*DEG; draw(); };
-document.getElementById('magLimit').oninput=(e)=>{ magLimit=parseFloat(e.target.value); document.getElementById('magRead').textContent=magLimit.toFixed(1); draw(); };
-["lat","lon","date","time"].forEach(id=>document.getElementById(id).addEventListener('change', fromInputs));
 
 // Mini calendar
 const miniCal=document.getElementById('miniCal'); const calInfo=document.getElementById('calInfo');
@@ -292,13 +254,33 @@ function highlightMiniCalendar(){
   });
 }
 
+// Init
 function init(){
-  setNow();
-  resize(); requestAnimationFrame(()=>resize()); requestAnimationFrame(()=>requestAnimationFrame(()=>resize()));
+  // Force an initial time and sync inputs so parsing never hits undefined
+  baseTime = new Date();
+  setInputsFromBase();
+  updateDeltaRead();
+  // Resize a few times to beat late-layout cases
+  resize();
+  requestAnimationFrame(resize);
+  requestAnimationFrame(()=>requestAnimationFrame(resize));
   window.addEventListener('resize', resize);
+  renderMiniCalendar();
   updateScrubLabel();
+  draw();
 }
-init();
+document.getElementById('btnNow').addEventListener('click', ()=>{ baseTime=new Date(); offsetSeconds=0; setInputsFromBase(); scrub.value=0; updateDeltaRead(); draw(); renderMiniCalendar(); });
+document.getElementById('btnGeo').addEventListener('click', ()=>{
+  if(!navigator.geolocation){ toast("Geolocation not supported"); return; }
+  navigator.geolocation.getCurrentPosition(p=>{
+    document.getElementById('lat').value=p.coords.latitude.toFixed(6);
+    document.getElementById('lon').value=p.coords.longitude.toFixed(6);
+    const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00";
+    if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); baseTime=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); }
+    lon=parseFloat(document.getElementById('lon').value)*DEG; lat=parseFloat(document.getElementById('lat').value)*DEG; draw();
+  }, _=> toast("Couldn't get location"));
+});
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
