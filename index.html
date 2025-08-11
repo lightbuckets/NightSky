@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.13 (Cosmic+ AutoLaunch)</title>
+<title>Pocket Planetarium — v1.13.1 (AutoLaunch + Rise/Set + Collapsible)</title>
 <style>
-:root{ --bg:#040816; --ink:#eaf2ff; --muted:#a9c2ff; --edge:#1b2d6a; --panel:#0a1240; --accent:#7ee7ff; --warn:#ffd36e; }
+:root{ --bg:#040816; --ink:#eaf2ff; --muted:#a9c2ff; --edge:#1b2d6a; --panel:#0a1240; --accent:#7ee7ff; --warn:#ffd36e; --ok:#a4ffcc; }
 html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 @keyframes drift { 0%{background-position:0% 0%, 100% 0%, 50% 0%} 50%{background-position:100% 60%, 0% 40%, 50% 60%} 100%{background-position:0% 100%, 100% 100%, 50% 100%} }
 body::before{content:""; position:fixed; inset:0; z-index:-3; background:
@@ -53,6 +53,19 @@ header h1{margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba
 .range::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8ff,#6cf);border:1px solid #2b6;box-shadow:0 0 10px #8ff}
 .range::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8ff,#6cf);border:1px solid #2b6;box-shadow:0 0 10px #8ff}
 
+/* Collapsible panels */
+details{border:1px solid var(--edge); border-radius:12px; background:#0b1442; margin:10px 0; padding:8px}
+summary{cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; font-weight:800}
+summary::-webkit-details-marker{display:none}
+summary .chev{transition:.2s}
+details[open] summary .chev{transform:rotate(90deg)}
+
+/* Sunrise card grid */
+.card{border:1px solid #21406e;background:#0b1442;border-radius:12px;padding:10px}
+.list{display:grid;grid-template-columns:repeat(2,minmax(160px,1fr));gap:8px}
+.item{border:1px solid #1f376e;border-radius:10px;padding:.45rem .6rem;background:#0a1338;display:flex;gap:8px;align-items:center}
+.meta{font-size:12px;color:#a9c2ff}
+
 #launchBadge{display:none}
 #redveilNote{display:none}
 html.night #redveilNote{display:inline}
@@ -65,86 +78,113 @@ html.night #redveilNote{display:inline}
 <div id="app">
   <header>
     <div id="brand"><div id="logo"></div><h1>🪐 Pocket Planetarium</h1></div>
-    <span class="badge">v1.13 Cosmic+ AutoLaunch</span>
+    <span class="badge">v1.13.1 AutoLaunch</span>
     <span class="pill">W×H <span id="wh">—</span></span>
     <span class="pill">LST <span id="lstRead">—</span></span>
-    <span id="launchBadge" class="badge">🚀 Launch soon</span>
+    <span id="launchBadge" class="badge">🚀 Launch in <span id="badgeCountdown">—</span></span>
     <span style="flex:1"></span>
     <button class="btn" id="nightToggle">🌘 Night Vision <small id="redveilNote">(red overlay)</small></button>
   </header>
 
   <aside id="left" class="panel">
-    <h3>🗺️ Where &amp; When</h3>
-    <div class="row">
-      <div class="field"><label>Latitude (°)</label><input id="lat" type="number" step="0.0001" value="33.422"/></div>
-      <div class="field"><label>Longitude (°)</label><input id="lon" type="number" step="0.0001" value="-111.822"/></div>
-    </div>
-    <div class="row">
-      <div class="field"><label>Date</label><input id="date" type="date"/></div>
-      <div class="field"><label>Time (local)</label><input id="time" type="time" step="1"/></div>
-    </div>
-    <div class="row">
-      <button class="btn accent" id="btnNow">☄️ Now</button>
-      <button class="btn" id="btnGeo">🛰️ Use My Location</button>
-      <select id="presets" class="btn">
-        <option value="">🧭 Presets…</option>
-        <option value="33.422,-111.822">Mesa, AZ</option>
-        <option value="19.826,-155.470">Mauna Kea</option>
-        <option value="51.477,0.000">Greenwich</option>
-        <option value="-33.868,151.209">Sydney</option>
-        <option value="28.300,-16.509">Teide</option>
-      </select>
-    </div>
 
-    <h3>🖼️ View</h3>
-    <div class="row">
-      <span class="note">Zoom</span><input type="range" id="zoom" class="range" min="0.6" max="3.0" step="0.01" value="1.0"/>
-      <span class="note">FOV</span><input type="range" id="fov" class="range" min="80" max="200" step="1" value="180"/>
-    </div>
-    <div class="row">
-      <label class="toggle"><input id="flip" type="checkbox"/><span>Mirror sky</span></label>
-      <label class="toggle"><input id="labels" type="checkbox" checked/><span>Labels</span></label>
-      <label class="toggle"><input id="grid" type="checkbox" checked/><span>Az/Alt grid</span></label>
-      <label class="toggle"><input id="ecliptic" type="checkbox" checked/><span>Ecliptic</span></label>
-      <label class="toggle"><input id="mw" type="checkbox" checked/><span>Milky Way glow</span></label>
-      <label class="toggle"><input id="constLines" type="checkbox" checked/><span>Constellations</span></label>
-    </div>
-
-    <h3>🌠 Meteor Showers</h3>
-    <div class="row">
-      <label class="toggle"><input id="radiantsToggle" type="checkbox" checked/><span>Show radiants</span></label>
-      <label class="toggle"><input id="animateRadiants" type="checkbox" checked/><span>Animate</span></label>
-    </div>
-
-    <h3>🚀 Launch Alerts (auto from LL2)</h3>
-    <div class="card">
+    <details open>
+      <summary><span class="chev">▶</span> 🗺️ Where &amp; When</summary>
       <div class="row">
-        <label class="toggle"><input id="launchAuto" type="checkbox" checked/><span>Auto-check every hour</span></label>
-        <label class="toggle"><input id="launchTrack" type="checkbox" checked/><span>Draw expected track</span></label>
+        <div class="field"><label>Latitude (°)</label><input id="lat" type="number" step="0.0001" value="33.422"/></div>
+        <div class="field"><label>Longitude (°)</label><input id="lon" type="number" step="0.0001" value="-111.822"/></div>
       </div>
-      <div id="launchList" class="list"></div>
-      <div class="row"><span class="note" id="launchStatus">Fetching upcoming SpaceX launches near KSC/VBG…</span></div>
-    </div>
-
-    <h3>🌀 Deep Sky Catalog</h3>
-    <div class="card">
       <div class="row">
-        <input id="dsoSearch" class="field" placeholder="Search (e.g., 'Andromeda', 'NGC 7000')"/>
-        <select id="dsoType" class="btn">
-          <option value="">All types</option>
-          <option>Galaxy</option><option>Nebula</option><option>Open Cluster</option><option>Globular Cluster</option><option>PN</option>
+        <div class="field"><label>Date</label><input id="date" type="date"/></div>
+        <div class="field"><label>Time (local)</label><input id="time" type="time" step="1"/></div>
+      </div>
+      <div class="row">
+        <button class="btn accent" id="btnNow">☄️ Now</button>
+        <button class="btn" id="btnGeo">🛰️ Use My Location</button>
+        <select id="presets" class="btn">
+          <option value="">🧭 Presets…</option>
+          <option value="33.422,-111.822">Mesa, AZ</option>
+          <option value="19.826,-155.470">Mauna Kea</option>
+          <option value="51.477,0.000">Greenwich</option>
+          <option value="-33.868,151.209">Sydney</option>
+          <option value="28.300,-16.509">Teide</option>
         </select>
-        <span class="note">Max mag</span><input id="dsoMagLimit" type="range" class="range" min="0" max="12" value="10" step="0.1" style="flex:1"/>
-        <span class="pill">≤ <span id="dsoMagRead">10.0</span></span>
       </div>
-      <div id="dsoList" class="list"></div>
-    </div>
+    </details>
 
-    <h3>🎯 Jump To</h3>
-    <div class="row">
-      <select id="jumpSelect" class="btn" style="min-width:260px"></select>
-      <button class="btn" id="jumpBtn">🎯 Center</button>
-    </div>
+    <details open>
+      <summary><span class="chev">▶</span> 🖼️ View</summary>
+      <div class="row">
+        <span class="note">Zoom</span><input type="range" id="zoom" class="range" min="0.6" max="3.0" step="0.01" value="1.0"/>
+        <span class="note">FOV</span><input type="range" id="fov" class="range" min="80" max="200" step="1" value="180"/>
+      </div>
+      <div class="row">
+        <label class="toggle"><input id="flip" type="checkbox"/><span>Mirror sky</span></label>
+        <label class="toggle"><input id="labels" type="checkbox" checked/><span>Labels</span></label>
+        <label class="toggle"><input id="grid" type="checkbox" checked/><span>Az/Alt grid</span></label>
+        <label class="toggle"><input id="ecliptic" type="checkbox" checked/><span>Ecliptic</span></label>
+        <label class="toggle"><input id="mw" type="checkbox" checked/><span>Milky Way glow</span></label>
+        <label class="toggle"><input id="constLines" type="checkbox" checked/><span>Constellations</span></label>
+      </div>
+    </details>
+
+    <details open>
+      <summary><span class="chev">▶</span> ☀️🌙 Sun & Moon</summary>
+      <div class="card">
+        <div class="list">
+          <div class="item">🌅 Sunrise <span style="margin-left:auto"><strong id="sunrise">—</strong></span></div>
+          <div class="item">🌇 Sunset <span style="margin-left:auto"><strong id="sunset">—</strong></span></div>
+          <div class="item">🌙↑ Moonrise <span style="margin-left:auto"><strong id="moonrise">—</strong></span></div>
+          <div class="item">🌙↓ Moonset <span style="margin-left:auto"><strong id="moonset">—</strong></span></div>
+          <div class="item">🌗 Phase <span style="margin-left:auto"><strong id="moonphase">—</strong> <small id="moonillum"></small></span></div>
+        </div>
+      </div>
+    </details>
+
+    <details open>
+      <summary><span class="chev">▶</span> 🌠 Meteor Showers</summary>
+      <div class="row">
+        <label class="toggle"><input id="radiantsToggle" type="checkbox" checked/><span>Show radiants</span></label>
+        <label class="toggle"><input id="animateRadiants" type="checkbox" checked/><span>Animate</span></label>
+      </div>
+    </details>
+
+    <details open>
+      <summary><span class="chev">▶</span> 🚀 Launch Alerts (auto)</summary>
+      <div class="card">
+        <div class="row">
+          <label class="toggle"><input id="launchAuto" type="checkbox" checked/><span>Auto-check every hour</span></label>
+          <label class="toggle"><input id="launchTrack" type="checkbox" checked/><span>Draw expected track</span></label>
+        </div>
+        <div id="launchList" class="list"></div>
+        <div class="row"><span class="note" id="launchStatus">Fetching upcoming SpaceX launches near KSC/VBG…</span></div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="chev">▶</span> 🌀 Deep Sky Catalog</summary>
+      <div class="card">
+        <div class="row">
+          <input id="dsoSearch" class="field" placeholder="Search (e.g., 'Andromeda', 'NGC 7000')"/>
+          <select id="dsoType" class="btn">
+            <option value="">All types</option>
+            <option>Galaxy</option><option>Nebula</option><option>Open Cluster</option><option>Globular Cluster</option><option>PN</option>
+          </select>
+          <span class="note">Max mag</span><input id="dsoMagLimit" type="range" class="range" min="0" max="12" value="10" step="0.1" style="flex:1"/>
+          <span class="pill">≤ <span id="dsoMagRead">10.0</span></span>
+        </div>
+        <div id="dsoList" class="list"></div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="chev">▶</span> 🎯 Jump To</summary>
+      <div class="row">
+        <select id="jumpSelect" class="btn" style="min-width:260px"></select>
+        <button class="btn" id="jumpBtn">🎯 Center</button>
+      </div>
+    </details>
+
   </aside>
 
   <div id="canvasWrap">
@@ -177,21 +217,32 @@ html.night #redveilNote{display:inline}
 <div id="toast" style="position:fixed;left:16px;bottom:16px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:12px;color:#eaf2ff;opacity:0;transform:translateY(8px);transition:.25s;box-shadow:0 12px 28px #000a">—</div>
 
 <script>
-// ===== Helpers =====
 window.onerror = m => { toast('Error: ' + m, 6000); };
+
 const DEG=Math.PI/180, RAD=180/Math.PI;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const mod=(x,m)=>((x%m)+m)%m;
 const pad=n=>n.toString().padStart(2,'0');
 
-// ===== Astro math (trimmed) =====
 function jdFromDate(date){ return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds())/86400000 + 2440587.5; }
 function gmst(jd){ const T=(jd-2451545.0)/36525.0; let s=67310.54841 + (876600*3600 + 8640184.812866)*T + 0.093104*T*T - 6.2e-6*T*T*T; return mod(s,86400)/240.0*DEG; }
 function lst(jd, lonRad){ return mod(gmst(jd) + lonRad, 2*Math.PI); }
 function radecFromEcliptic(lam, beta){ const eps=23.43928*DEG; const sinDec=Math.sin(beta)*Math.cos(eps)+Math.cos(beta)*Math.sin(eps)*Math.sin(lam); const dec=Math.asin(clamp(sinDec,-1,1)); const y=Math.sin(lam)*Math.cos(eps)-Math.tan(beta)*Math.sin(eps); const x=Math.cos(lam); return {ra:mod(Math.atan2(y,x),2*Math.PI), dec}; }
 function azAltFromRADec(ra, dec, lat, lstRad){ const H=mod(lstRad - ra,2*Math.PI); const sinAlt=Math.sin(dec)*Math.sin(lat)+Math.cos(dec)*Math.cos(lat)*Math.cos(H); const alt=Math.asin(clamp(sinAlt,-1,1)); const cosAz=(Math.sin(dec)-Math.sin(alt)*Math.sin(lat))/(Math.cos(alt)*Math.cos(lat)); let az=Math.acos(clamp(cosAz,-1,1)); if(Math.sin(H)>0) az=2*Math.PI-az; return {az,alt}; }
 
-// ===== Fake star field (procedural) + tiny DSO list to keep file light =====
+// Moon + Sun (for rise/set/phase)
+function sunEquatorial(jd){ // via Earth's position inverse
+  function planetPositionEcliptic(){ const T=(jd-2451545.0)/36525.0; const a=1.00000261,e=0.01671123,I=(-0.00001531)*DEG,L=(100.46457166+36000.770*T)*DEG,lp=(102.93768193)*DEG,o=0;
+    const M=mod(L - lp, 2*Math.PI); let E=M; for(let i=0;i<6;i++) E = M + e*Math.sin(E); const nu=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2)); const r=a*(1 - e*Math.cos(E));
+    const x=r*(Math.cos(o)*Math.cos(nu+lp-o) - Math.sin(o)*Math.sin(nu+lp-o)*Math.cos(I)); const y=r*(Math.sin(o)*Math.cos(nu+lp-o) + Math.cos(o)*Math.sin(nu+lp-o)*Math.cos(I)); const z=r*(Math.sin(nu+lp-o)*Math.sin(I)); return {x,y,z}; }
+  const e=planetPositionEcliptic(); const x=-e.x, y=-e.y, z=-e.z; const eps=23.43928*DEG; const xe=x; const ye=y*Math.cos(eps) - z*Math.sin(eps); const ze=y*Math.sin(eps) + z*Math.cos(eps); const ra = mod(Math.atan2(ye, xe), 2*Math.PI); const dec = Math.atan2(ze, Math.hypot(xe,ye)); return {ra, dec}; }
+function moonEquatorial(jd){ const T=(jd-2451545.0)/36525; const Lp=(218.3164477 + 481267.88123421*T)*DEG; const D=(297.8501921 + 445267.1114034*T)*DEG; const Mp=(134.9633964 + 477198.8675055*T)*DEG; const F=(93.2720950 + 483202.0175233*T)*DEG;
+  const lon=Lp + 6.289*DEG*Math.sin(Mp)+1.274*DEG*Math.sin(2*D - Mp)+0.658*DEG*Math.sin(2*D)+0.214*DEG*Math.sin(2*Mp)+0.110*DEG*Math.sin(D);
+  const lat=5.128*DEG*Math.sin(F)+0.280*DEG*Math.sin(Mp + F)+0.277*DEG*Math.sin(Mp - F)+0.173*DEG*Math.sin(2*D - F); return radecFromEcliptic(lon, lat); }
+function moonIllumination(jd){ const s=sunEquatorial(jd); const m=moonEquatorial(jd); const cospsi=Math.sin(s.dec)*Math.sin(m.dec)+Math.cos(s.dec)*Math.cos(m.dec)*Math.cos(mod(s.ra-m.ra,2*Math.PI)); const psi=Math.acos(clamp(cospsi,-1,1)); const k=(1-Math.cos(psi))/2;
+  const age=mod(m.ra-s.ra,2*Math.PI); const deg=age*RAD; let name=""; if(deg<22.5) name="New Moon"; else if(deg<67.5) name="Waxing Crescent"; else if(deg<112.5) name="First Quarter"; else if(deg<157.5) name="Waxing Gibbous"; else if(deg<202.5) name="Full Moon"; else if(deg<247.5) name="Waning Gibbous"; else if(deg<292.5) name="Last Quarter"; else if(deg<337.5) name="Waning Crescent"; else name="New Moon"; return {fraction:k, name}; }
+
+// Star field (procedural small)
 function seededRandom(seed){ let t=seed>>>0; return function(){ t=(t+0x6D2B79F5)|0; let r=Math.imul(t^(t>>>15),1|t); r^=r+Math.imul(r^(r>>>7),61|t); return ((r^(r>>>14))>>>0)/4294967296; };}
 function makeStars(n=6500, seed=2025){ const rnd=seededRandom(seed), out=[]; for(let i=0;i<n;i++){ const u=rnd(), v=rnd(), w=rnd(); const ra=2*Math.PI*u; const x=Math.acos(1-2*v)-Math.PI/2; const bias=0.35*Math.sin(ra*0.5)+0.45*Math.sin((ra+1.2)*1.0); const dec=clamp(x+bias*DEG*15,-Math.PI/2,Math.PI/2); const mag=1.3 + -2*Math.log10(0.02+w*w); out.push({ra,dec,mag}); } return out; }
 const stars=makeStars();
@@ -201,42 +252,35 @@ const DSO=[
  {name:"M42 Orion",ra:raRad(5,35),dec:-5.5*DEG,type:"Nebula",mag:4.0,dist:"1.3 kly",size:"65′×60′"},
  {name:"NGC 7000 North America", ra: raRad(20,58), dec: 44*DEG, type:"Nebula", mag:4, dist:"~2 kly", size:"120′×100′"},
 ];
-
-// ===== Constellations & Radiants =====
 const CONSTS=[{name:"Orion", lines:[[ {ra:raRad(5,14),dec:-8*DEG},{ra:raRad(5,55),dec:7*DEG} ], [ {ra:raRad(5,35),dec:-5.4*DEG},{ra:raRad(5,36),dec:-1.2*DEG} ]]}];
 const RADIANTS=[{name:"Perseids", ra:(3+4/60)*15*DEG, dec:58*DEG, when:"Aug 11–13"}];
 
-// ===== Canvases =====
+// Canvases
 const sky=document.getElementById('sky'), ol=document.getElementById('overlay'), wrap=document.getElementById('canvasWrap');
 const ctx=sky.getContext('2d'), octx=ol.getContext('2d');
 const whEl=document.getElementById('wh'), lstEl=document.getElementById('lstRead'), debugEl=document.getElementById('debug'), clockRead=document.getElementById('clockRead'), deltaRead=document.getElementById('deltaRead');
-const launchBadge=document.getElementById('launchBadge'), launchStatus=document.getElementById('launchStatus'), launchList=document.getElementById('launchList');
-let W=0,H=0,R=0, scale=1, fov=180*DEG;
-let lat=33.422*DEG, lon=-111.822*DEG;
+const launchBadge=document.getElementById('launchBadge'), launchStatus=document.getElementById('launchStatus'), launchList=document.getElementById('launchList'), badgeCountdown=document.getElementById('badgeCountdown');
+let W=0,H=0,R=0, scale=1, fov=180*DEG; let lat=33.422*DEG, lon=-111.822*DEG;
 let baseTime=new Date(), offsetSeconds=0, yaw=0, pitch=0, mirror=false;
-let showLabels=true, showGrid=true, showEcliptic=true, showMW=true, showConst=true, showRadiants=true, animateRadiants=true;
-let magLimit=6.5;
-let currentJD=0, currentLST=0;
-let playing=false, rate=60, lastT=performance.now();
+let showLabels=true, showGrid=true, showEcliptic=true, showMW=true, showConst=true, showRadiants=true, animateRadiants=true; let magLimit=6.5;
+let currentJD=0, currentLST=0; let playing=false, rate=60, lastT=performance.now();
 let autoLaunch=true, drawLaunchTrack=true;
+const KSC={name:"KSC/Cape", lat:28.6084, lon:-80.6043}, VBG={name:"Vandenberg", lat:34.632, lon:-120.611};
+let launches=[]; // filled by fetchLaunches()
 
-// ===== Resize (robust) =====
 function safeSize(){ let w=wrap.clientWidth, h=wrap.clientHeight; if(!w||!h){ w=Math.max(640, Math.floor(window.innerWidth*0.9)); h=Math.max(380, Math.floor(window.innerHeight*0.6)); wrap.style.minHeight=h+'px'; } return {w,h}; }
 function resize(){ const dpr=Math.max(1,Math.min(2.5,window.devicePixelRatio||1)); const s=safeSize(); W=s.w; H=s.h; R=Math.min(W,H)/2;
   sky.width=Math.floor(W*dpr); sky.height=Math.floor(H*dpr); ol.width=sky.width; ol.height=sky.height;
   sky.style.width=W+'px'; sky.style.height=H+'px'; ol.style.width=W+'px'; ol.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0); octx.setTransform(dpr,0,0,dpr,0,0); whEl.textContent=W+'×'+H; draw(true); }
 
-// ===== Time helpers =====
 function currentTime(){ return new Date(baseTime.getTime() + offsetSeconds*1000); }
 function updateDeltaRead(){ const sign=offsetSeconds>=0?"+":"−"; const absSec=Math.abs(offsetSeconds); const h=Math.floor(absSec/3600); const m=Math.floor((absSec%3600)/60); deltaRead.textContent=`${sign}${h? h+'h ':''}${m}m`; }
 
-// ===== Projection + drawing =====
 function project(az, alt){ const theta=(Math.PI/2 - alt), maxTheta=fov/2; if(theta>maxTheta) return null; const r=(theta/maxTheta)*R*scale;
   let x=r*Math.sin(az + yaw), y=-r*Math.cos(az + yaw); const c=Math.cos(pitch); const yy=y*c; if(mirror) x=-x; return {x:W/2+x, y:H/2+yy, r}; }
 function drawBackground(first=false){ ctx.clearRect(0,0,W,H); const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,R*1.12); g.addColorStop(0,"rgba(6,16,30,0)"); g.addColorStop(1,"rgba(0,0,0,0.7)"); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle="#203456"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(W/2,H/2,R*scale,0,2*Math.PI); ctx.stroke(); const n=project(0,0); if(n){ ctx.fillStyle="#9bb2da"; ctx.font="12px system-ui"; ctx.fillText("N", n.x-3, n.y-6); }
-  if(first){ ctx.fillStyle="#fff"; ctx.font="bold 16px system-ui"; ctx.fillText("🚀 Ready", W/2-40, H/2-44); ctx.strokeStyle="#fff"; ctx.beginPath(); ctx.moveTo(W/2-28,H/2); ctx.lineTo(W/2+28,H/2); ctx.moveTo(W/2,H/2-28); ctx.lineTo(W/2,H/2+28); ctx.stroke(); }}
+  ctx.strokeStyle="#203456"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(W/2,H/2,R*scale,0,2*Math.PI); ctx.stroke(); const n=project(0,0); if(n){ ctx.fillStyle="#9bb2da"; ctx.font="12px system-ui"; ctx.fillText("N", n.x-3, n.y-6); } }
 function drawGrid(){ if(!showGrid) return; ctx.strokeStyle="#1f3358"; ctx.lineWidth=0.9; ctx.setLineDash([4,6]); ctx.beginPath();
   for(let alt=75*DEG; alt>0; alt-=15*DEG){ const theta=(Math.PI/2 - alt); const r=(theta/(fov/2))*R*scale; ctx.moveTo(W/2+r, H/2); ctx.arc(W/2,H/2,r,0,2*Math.PI); } ctx.stroke(); ctx.setLineDash([]);
   ctx.strokeStyle="#25406b"; ctx.lineWidth=0.9; for(let az=0; az<360; az+=30){ const a=az*DEG; const p1=project(a,0.001), p2=project(a,Math.PI/2-0.001); if(p1&&p2){ ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); ctx.fillStyle="#7ea1d6"; ctx.font="11px system-ui"; ctx.fillText(`${az}°`, p1.x+4, p1.y+4);} } }
@@ -249,10 +293,7 @@ function drawConstellations(){ if(!showConst) return; ctx.save(); ctx.strokeStyl
 function drawRadiants(){ if(!showRadiants) return; const phase=animateRadiants? (Date.now()%2000)/2000 : 0.3; const pulse=0.6+0.4*Math.sin(phase*2*Math.PI);
   for(const r of RADIANTS){ const {az,alt}=azAltFromRADec(r.ra,r.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; const base=8, rad=base+6*pulse; octx.beginPath(); octx.arc(p.x,p.y,rad+3,0,2*Math.PI); octx.fillStyle="rgba(120,220,255,0.12)"; octx.fill(); octx.beginPath(); octx.arc(p.x,p.y,rad,0,2*Math.PI); octx.strokeStyle="rgba(160,240,255,0.8)"; octx.lineWidth=1; octx.setLineDash([4,3]); octx.stroke(); octx.setLineDash([]); if(showLabels){ octx.fillStyle="#ddfaff"; octx.font="11px system-ui"; octx.fillText(`✴ ${r.name}`, p.x+10, p.y-8); octx.fillStyle="#9bd8ff"; octx.fillText(r.when, p.x+10, p.y+6);} } }
 
-// ===== Launch fetching (LL2) =====
-const KSC={name:"KSC/Cape", lat:28.6084, lon:-80.6043}; // LC-39A-ish / Cape SLC-40 nearby
-const VBG={name:"Vandenberg", lat:34.632, lon:-120.611};  // SLC-4E
-let launches=[]; // {site, name, net, window_end, orbit, provider}
+// ==== Launch Library 2 fetching ====
 async function fetchLaunches(){
   try{
     launchStatus.textContent="Fetching from Launch Library 2…";
@@ -270,72 +311,97 @@ async function fetchLaunches(){
       out.push({
         site: isKSC? KSC : VBG,
         id:L.id, name:L.name, provider:L.launch_service_provider?.name||"", vehicle:L.rocket?.configuration?.full_name||L.rocket?.configuration?.name||"",
-        net, window_end: wend,
-        orbit: L.mission?.orbit?.abbrev || L.mission?.orbit?.name || (L.mission?.name||""),
-        pad: siteName
+        net, window_end: wend, orbit: L.mission?.orbit?.abbrev || L.mission?.orbit?.name || (L.mission?.name||""), pad: siteName
       });
     }
-    // keep nearest in time for each site
     const bySite={}; for(const x of out){ const key=x.site.name; if(!bySite[key] || (x.net && bySite[key].net && x.net<bySite[key].net)) bySite[key]=x; }
     launches = Object.values(bySite).sort((a,b)=> (a.net||0) - (b.net||0));
     renderLaunchList();
     launchStatus.textContent = launches.length? "Auto alerts armed (2h pre-window)" : "No upcoming SpaceX launches at KSC/VBG found.";
-  }catch(e){ launchStatus.textContent="Launch fetch failed (offline?) — you can still arm manually if we add that back."; console.error(e); }
+  }catch(e){ launchStatus.textContent="Launch fetch failed (offline?)"; console.error(e); }
 }
+function fmtUTC(d){ if(!d) return "TBD"; return d.toISOString().replace('T',' ').slice(0,16)+"Z"; }
+function tminus(to){ const now=new Date(); const ms=(to-now); const sign = ms>=0? "-" : "+"; const s=Math.abs(ms)/1000; const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60); const sec=Math.floor(s%60); return `${sign}${pad(h)}:${pad(m)}:${pad(sec)}`; }
 function renderLaunchList(){
   if(!launches.length){ launchList.innerHTML=""; return; }
   const html = launches.map(L=>{
-    const t = L.net ? L.net.toISOString().replace('T',' ').slice(0,16)+"Z" : "TBD";
-    return `<div class="item"><div><strong>${L.name}</strong><div class="meta">${L.provider} • ${L.vehicle} • ${L.pad}</div><div class="meta">NET ${t}${L.window_end? ` • window ends ${L.window_end.toISOString().slice(11,16)}Z` : ""} • ${L.orbit||""}</div></div><button class="btn" data-id="${L.id}">Center at NET</button></div>`;
+    return `<div class="item">
+      <div>
+        <strong>${L.name}</strong>
+        <div class="meta">${L.provider} • ${L.vehicle} • ${L.pad}</div>
+        <div class="meta">NET ${fmtUTC(L.net)}${L.window_end? ` • window ends ${L.window_end.toISOString().slice(11,16)}Z` : ""} • ${L.orbit||""}</div>
+        <div class="meta">T− <span class="cd" data-id="${L.id}">—:—:—</span></div>
+      </div>
+    </div>`;
   }).join("");
   launchList.innerHTML = html;
-  launchList.querySelectorAll('button[data-id]').forEach(b=> b.onclick = ()=> { const L=launches.find(x=>x.id===b.dataset.id); if(!L||!L.net) return; baseTime=new Date(L.net.getTime()); offsetSeconds=0; document.getElementById('timeScrub').value=0; updateDeltaRead(); // center toward site
-    const bearing = bearingTo(L.site.lat*DEG, L.site.lon*DEG); yaw = -bearing; pitch=0; toast("Centered to launch azimuth at NET"); });
 }
 
-// Badge + alerts
-function launchTick(now){
-  if(!launches.length){ launchBadge.style.display='none'; return; }
-  let show=false;
-  for(const L of launches){ if(!L.net) continue; const pre=2*3600000; if(now>=L.net - pre && now<= (L.window_end||L.net)){ show=true; break; } }
-  launchBadge.style.display = show? 'inline-flex' : 'none';
+// Badge + countdown updates
+function updateCountdowns(){
+  if(!launches.length) { launchBadge.style.display='none'; return; }
+  let soonest=null;
+  const cds=document.querySelectorAll('.cd');
+  cds.forEach(span=>{
+    const L=launches.find(x=>x.id===span.dataset.id);
+    if(!L || !L.net) { span.textContent="TBD"; return; }
+    span.textContent = tminus(L.net);
+    if(!soonest || L.net < soonest.net) soonest = L;
+  });
+  if(soonest && soonest.net){
+    const now=new Date(); const pre=2*3600000;
+    const inWindow = now>=soonest.net - pre && now <= (soonest.window_end||soonest.net);
+    launchBadge.style.display = inWindow ? 'inline-flex' : 'none';
+    badgeCountdown.textContent = tminus(soonest.net);
+  } else {
+    launchBadge.style.display='none';
+  }
 }
 
-// ====== Approx launch track ======
-// Bearing from observer to site (great-circle)
-function bearingTo(lat2, lon2){
-  const φ1=lat, λ1=lon, φ2=lat2, λ2=lon2; const y=Math.sin(λ2-λ1)*Math.cos(φ2); const x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1); return mod(Math.atan2(y,x),2*Math.PI);
-}
-// Simple arc from horizon at bearing up to altitude depending on distance & orbit
+// Approx launch track
+function distanceKm(φ1,λ1,φ2,λ2){ const dφ=φ2-φ1, dλ=λ2-λ1; const a=Math.sin(dφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(dλ/2)**2; return 2*6371*Math.asin(Math.min(1,Math.sqrt(a))); }
+function bearingTo(lat2, lon2){ const φ1=lat, λ1=lon, φ2=lat2, λ2=lon2; const y=Math.sin(λ2-λ1)*Math.cos(φ2); const x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1); return mod(Math.atan2(y,x),2*Math.PI); }
 function drawLaunchArc(){
   if(!drawLaunchTrack || !launches.length) return;
   const now = new Date();
-  // Use the soonest active/next launch in window
   const active = launches.find(L=> L.net && now >= L.net - 2*3600000 && now <= (L.window_end||L.net));
   if(!active) return;
   const br = bearingTo(active.site.lat*DEG, active.site.lon*DEG);
-  // crude altitude max: if closer than 1500km -> 40°, else 15°
   const dist = distanceKm(lat,lon, active.site.lat*DEG, active.site.lon*DEG);
   const altMax = dist<800? 60*DEG : dist<1500? 35*DEG : 15*DEG;
-  // shape over 120° azimuth span centered on bearing
-  octx.save();
-  octx.strokeStyle="rgba(255,211,110,0.9)"; octx.lineWidth=1.6; octx.setLineDash([8,4]);
+  octx.save(); octx.strokeStyle="rgba(255,211,110,0.9)"; octx.lineWidth=1.6; octx.setLineDash([8,4]);
   octx.beginPath(); let started=false;
   for(let s=-1.0; s<=1.0; s+=0.05){
     const az = mod(br + s*(30*DEG), 2*Math.PI);
     const alt = Math.max(5*DEG, altMax*(1 - Math.abs(s)));
-    const p = project(az, alt);
-    if(!p) continue;
+    const p = project(az, alt); if(!p) continue;
     if(!started){ octx.moveTo(p.x,p.y); started=true; } else { octx.lineTo(p.x,p.y); }
   }
-  if(started) octx.stroke();
-  octx.setLineDash([]);
-  if(showLabels){ const p=project(br, 8*DEG); if(p){ octx.fillStyle="#ffd36e"; octx.font="11px system-ui"; octx.fillText("⤴︎ Launch track (approx)", p.x+8, p.y); } }
+  if(started) octx.stroke(); octx.setLineDash([]);
+  if(true){ const p=project(br, 8*DEG); if(p){ octx.fillStyle="#ffd36e"; octx.font="11px system-ui"; octx.fillText("⤴︎ Launch track (approx)", p.x+8, p.y); } }
   octx.restore();
 }
-function distanceKm(φ1,λ1,φ2,λ2){ const dφ=φ2-φ1, dλ=λ2-λ1; const a=Math.sin(dφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(dλ/2)**2; return 2*6371*Math.asin(Math.min(1,Math.sqrt(a))); }
 
-// ====== DSO UI (thumbnails minimal) ======
+// Rise/Set + phase
+function localMidnightBase(){ const b=baseTime; return new Date(b.getFullYear(), b.getMonth(), b.getDate(), 0,0,0); }
+function altOfSun(d){ const jd=jdFromDate(d); const L=lst(jd, lon); const s = sunEquatorial(jd); return azAltFromRADec(s.ra, s.dec, lat, L).alt; }
+function altOfMoon(d){ const jd=jdFromDate(d); const L=lst(jd, lon); const m = moonEquatorial(jd); return azAltFromRADec(m.ra, m.dec, lat, L).alt; }
+function findEvents(){ const day0 = localMidnightBase(); const stepMin = 5, steps=Math.floor(24*60/stepMin);
+  const thSun=-0.833*DEG, thMoon=0.125*DEG; let prevSunAlt=altOfSun(new Date(day0.getTime())), prevMoonAlt=altOfMoon(new Date(day0.getTime()));
+  let sunrise=null,sunset=null,moonrise=null,moonset=null; for(let i=1;i<=steps;i++){ const t=new Date(day0.getTime()+i*stepMin*60000); const sa=altOfSun(t), ma=altOfMoon(t);
+    if(sunrise===null && prevSunAlt<thSun && sa>=thSun){ const f=(thSun - prevSunAlt)/(sa - prevSunAlt); sunrise = new Date(day0.getTime() + (i-1+f)*stepMin*60000); }
+    if(sunset===null && prevSunAlt>thSun && sa<=thSun){ const f=(prevSunAlt - thSun)/(prevSunAlt - sa); sunset = new Date(day0.getTime() + (i-1+f)*stepMin*60000); }
+    if(moonrise===null && prevMoonAlt<thMoon && ma>=thMoon){ const f=(thMoon - prevMoonAlt)/(ma - prevMoonAlt); moonrise = new Date(day0.getTime() + (i-1+f)*stepMin*60000); }
+    if(moonset===null && prevMoonAlt>thMoon && ma<=thMoon){ const f=(prevMoonAlt - thMoon)/(prevMoonAlt - ma); moonset = new Date(day0.getTime() + (i-1+f)*stepMin*60000); }
+    prevSunAlt=sa; prevMoonAlt=ma; }
+  const midJD=jdFromDate(new Date(day0.getTime()+12*3600000)); const illum=moonIllumination(midJD); return {sunrise,sunset,moonrise,moonset,illum}; }
+function fmtTime(d){ if(!d) return "—"; return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function updateRiseSetUI(){ const {sunrise,sunset,moonrise,moonset,illum}=findEvents();
+  document.getElementById('sunrise').textContent=fmtTime(sunrise); document.getElementById('sunset').textContent=fmtTime(sunset);
+  document.getElementById('moonrise').textContent=fmtTime(moonrise); document.getElementById('moonset').textContent=fmtTime(moonset);
+  document.getElementById('moonphase').textContent = illum.name; document.getElementById('moonillum').textContent = `(${Math.round(illum.fraction*100)}% lit)`; }
+
+// DSO list (minimal)
 function dsoThumbSVG(type){ const colors={Galaxy:"#9ad1ff",Nebula:"#a4ffcc","Open Cluster":"#ffe6a3","Globular Cluster":"#ffd36e",PN:"#b6a0ff"}; const symbol= type==="Galaxy" ? "<ellipse cx='21' cy='21' rx='14' ry='7' fill='none' stroke='white' stroke-width='1.5'/>" : type==="Nebula" ? "<circle cx='21' cy='21' r='12' fill='url(#g)'/>" : "<g><circle cx='12' cy='18' r='2' fill='white'/><circle cx='20' cy='24' r='2' fill='white'/><circle cx='28' cy='16' r='2' fill='white'/></g>"; return `data:image/svg+xml;utf8,`+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 42'><defs><radialGradient id='g'><stop offset='0%' stop-color='${colors[type]||"#9ad1ff"}' stop-opacity='0.9'/><stop offset='100%' stop-color='${colors[type]||"#9ad1ff"}' stop-opacity='0.0'/></radialGradient></defs><rect width='42' height='42' rx='8' ry='8' fill='#08133a'/>${symbol}</svg>`); }
 function renderDSOList(){ const list=document.getElementById('dsoList'); const q=(document.getElementById('dsoSearch').value||"").toLowerCase(); const typ=document.getElementById('dsoType').value; const mlim=parseFloat(document.getElementById('dsoMagLimit').value||"12");
   const filtered = DSO.filter(o=> (typ? o.type===typ : true) && (o.mag==null || o.mag<=mlim) && (q? o.name.toLowerCase().includes(q) : true) );
@@ -346,10 +412,10 @@ document.getElementById('dsoSearch').addEventListener('input', renderDSOList);
 document.getElementById('dsoType').addEventListener('change', renderDSOList);
 document.getElementById('dsoMagLimit').addEventListener('input', renderDSOList);
 
-// ====== Controls ======
+// Controls
 function toast(msg, t=1600){ const el=document.getElementById('toast'); el.textContent = msg; el.style.opacity=1; el.style.transform='translateY(0)'; setTimeout(()=>{ el.style.opacity=0; el.style.transform='translateY(8px)'; }, t); }
-function setNow(){ const now=new Date(); baseTime=new Date(now.getTime()); offsetSeconds=0; document.getElementById('date').value=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`; document.getElementById('time').value=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`; document.getElementById('timeScrub').value="0"; updateDeltaRead(); draw(); }
-function fromInputs(){ const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00"; if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); const local=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); baseTime=new Date(local.getTime()-local.getTimezoneOffset()*60000); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); } lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; draw(); }
+function setNow(){ const now=new Date(); baseTime=new Date(now.getTime()); offsetSeconds=0; document.getElementById('date').value=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`; document.getElementById('time').value=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`; document.getElementById('timeScrub').value="0"; updateDeltaRead(); draw(); updateRiseSetUI(); }
+function fromInputs(){ const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00"; if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); const local=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); baseTime=new Date(local.getTime()-local.getTimezoneOffset()*60000); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); } lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; draw(); updateRiseSetUI(); }
 document.getElementById('btnNow').onclick=setNow;
 document.getElementById('btnGeo').onclick=()=>{ if(!navigator.geolocation){ toast("Geolocation not supported"); return; } navigator.geolocation.getCurrentPosition(p=>{ document.getElementById('lat').value=p.coords.latitude.toFixed(6); document.getElementById('lon').value=p.coords.longitude.toFixed(6); fromInputs(); }, _=> toast("Couldn't get location")); };
 document.getElementById('presets').onchange=(e)=>{ const v=e.target.value; if(!v) return; const [la,lo]=v.split(',').map(Number); document.getElementById('lat').value=la; document.getElementById('lon').value=lo; fromInputs(); toast("Preset applied"); };
@@ -368,7 +434,7 @@ document.getElementById('animateRadiants').onchange=(e)=>{ animateRadiants=e.tar
 document.getElementById('launchAuto').onchange=(e)=>{ autoLaunch=e.target.checked; };
 document.getElementById('launchTrack').onchange=(e)=>{ drawLaunchTrack=e.target.checked; };
 
-// ===== Time controls =====
+// Time controls
 const scrub=document.getElementById('timeScrub');
 scrub.oninput=(e)=>{ playing=false; document.getElementById('play').textContent="▶ Play"; offsetSeconds=parseInt(e.target.value,10); updateDeltaRead(); draw(); };
 document.getElementById('play').onclick=(e)=>{ playing=!playing; e.target.textContent= playing ? "⏸ Pause" : "▶ Play"; };
@@ -377,7 +443,7 @@ document.getElementById('rew').onclick=()=>{ offsetSeconds -= 3600; scrub.value=
 document.getElementById('ff').onclick=()=>{ offsetSeconds += 3600; scrub.value=offsetSeconds; updateDeltaRead(); draw(); };
 document.getElementById('resetView').onclick=()=>{ yaw=0; pitch=0; scale=1; document.getElementById('zoom').value=1; fov=180*DEG; document.getElementById('fov').value=180; draw(); };
 
-// ===== Animation loop =====
+// Draw loop
 function draw(first=false){
   const t=currentTime(); const jd=jdFromDate(t); currentJD=jd; currentLST=lst(jd, lon);
   lstEl.textContent = (mod(currentLST,2*Math.PI)*12/Math.PI).toFixed(2).replace('.',':');
@@ -390,18 +456,16 @@ function tick(){
   const now=performance.now(); const dt=(now-lastT)/1000; lastT=now;
   if(playing){ offsetSeconds+=rate*dt; scrub.value=Math.round(offsetSeconds); updateDeltaRead(); }
   draw();
-  launchTick(new Date());
+  updateCountdowns();
   requestAnimationFrame(tick);
 }
 
-// ===== Init =====
+// Init
 async function init(){
   setNow();
   resize(); requestAnimationFrame(()=>resize()); requestAnimationFrame(()=>requestAnimationFrame(()=>resize()));
   window.addEventListener('resize', resize);
   renderDSOList();
-  document.getElementById('dsoMagRead').textContent="10.0";
-  // First fetch + hourly refresh
   await fetchLaunches();
   setInterval(()=>{ if(autoLaunch) fetchLaunches(); }, 3600*1000);
   tick();
