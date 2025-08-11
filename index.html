@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.14.2 (Mini Calendar + Quick Jumps)</title>
+<title>Pocket Planetarium — v1.14.3 (Mini Cal Fix)</title>
 <style>
 :root{ --bg:#040816; --ink:#eaf2ff; --muted:#a9c2ff; --edge:#1b2d6a; --panel:#0a1240; --accent:#7ee7ff; --warn:#ffd36e; --ok:#a4ffcc; }
 html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -38,27 +38,13 @@ header h1{margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba
 #overlay{position:absolute;inset:0;pointer-events:none}
 #bottom{grid-row:3;grid-column:2;display:grid;grid-template-rows:auto auto;gap:12px;align-items:center;background:linear-gradient(180deg,#0a1338 0,#0b1230 100%);border:1px solid var(--edge);border-radius:16px;padding:16px;box-shadow:inset 0 0 40px rgba(126,231,255,.05)}
 
-.panel h3{margin:.4rem 0 .6rem;font-size:12px;color:#b8c9ff;text-transform:uppercase;letter-spacing:.16em}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:.45rem 0}
-.field{display:flex;flex-direction:column;gap:6px;min-width:150px}
-.field label{font-size:12px;color:#a9c2ff}
-.field input,.field select,.field textarea{background:#08133a;border:1px solid #203780;color:#eaf2ff;border-radius:12px;padding:.6rem .72rem;font-size:14px;outline:none;transition:.15s}
-.field input:focus,.field select:focus,.field textarea:focus{box-shadow:0 0 0 3px rgba(128,240,255,.25)}
-.btn{--c1:#10306a; --c2:#0c2250; background:linear-gradient(135deg,var(--c1),var(--c2));border:1px solid #2847a0;color:#eaf2ff;padding:.66rem .9rem;border-radius:12px;font-weight:800;cursor:pointer;transition:.15s;user-select:none;letter-spacing:.2px;
-     box-shadow:0 6px 18px #0008, inset 0 0 0 0 rgba(126,231,255,.0)}
-.btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px #000a, inset 0 0 40px rgba(126,231,255,.08)}
-.btn:active{transform:translateY(0)}
-.btn.accent{--c1:#0b2c64;--c2:#0f3a83}
 .range{appearance:none;width:100%;height:10px;border-radius:999px;background:#0b1848;border:1px solid #21406e;outline:none}
 .range::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8ff,#6cf);border:1px solid #2b6;box-shadow:0 0 10px #8ff}
 .range::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8ff,#6cf);border:1px solid #2b6;box-shadow:0 0 10px #8ff}
-
-/* Jumbo scrubber */
 .range.jumbo{height:18px}
 .range.jumbo::-webkit-slider-thumb{width:28px;height:28px}
 .range.jumbo::-moz-range-thumb{width:28px;height:28px}
 
-/* Mini calendar */
 #miniCal{display:flex;gap:6px;align-items:center;flex-wrap:wrap; width:100%}
 .calbtn{cursor:pointer;border:1px solid #21406e;background:#0b1442;color:#dbe7ff;border-radius:10px;padding:.35rem .55rem; display:flex; flex-direction:column; align-items:center; min-width:58px}
 .calbtn .dow{font-size:10px;color:#a9c2ff;letter-spacing:.08em}
@@ -72,6 +58,16 @@ header h1{margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba
 #launchBadge{display:none}
 #redveilNote{display:none}
 html.night #redveilNote{display:inline}
+
+details{border:1px solid var(--edge); border-radius:12px; background:#0b1442; margin:10px 0; padding:8px}
+summary{cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; font-weight:800}
+summary::-webkit-details-marker{display:none}
+summary .chev{transition:.2s}
+details[open] summary .chev{transform:rotate(90deg)}
+.field{display:flex;flex-direction:column;gap:6px;min-width:150px}
+.field input,.field select{background:#08133a;border:1px solid #203780;color:#eaf2ff;border-radius:12px;padding:.6rem .72rem}
+.btn{--c1:#10306a; --c2:#0c2250; background:linear-gradient(135deg,var(--c1),var(--c2));border:1px solid #2847a0;color:#eaf2ff;padding:.66rem .9rem;border-radius:12px;font-weight:800;cursor:pointer}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:.28rem .6rem;border:1px solid #2441a0;border-radius:999px;color:#cde0ff;background:#0a1540cc;font-size:12px}
 </style>
 </head>
 <body>
@@ -80,7 +76,7 @@ html.night #redveilNote{display:inline}
 <div id="app">
   <header>
     <div id="brand"><div id="logo"></div><h1>🪐 Pocket Planetarium</h1></div>
-    <span class="badge">v1.14.2</span>
+    <span class="badge">v1.14.3</span>
     <span class="pill">W×H <span id="wh">—</span></span>
     <span class="pill">LST <span id="lstRead">—</span></span>
     <span id="launchBadge" class="badge">🚀 Launch in <span id="badgeCountdown">—</span></span>
@@ -89,7 +85,6 @@ html.night #redveilNote{display:inline}
   </header>
 
   <aside id="left" class="panel">
-
     <details open>
       <summary><span class="chev">▶</span> 🗺️ Where &amp; When</summary>
       <div class="row">
@@ -101,16 +96,8 @@ html.night #redveilNote{display:inline}
         <div class="field"><label>Time (local)</label><input id="time" type="time" step="1"/></div>
       </div>
       <div class="row">
-        <button class="btn accent" id="btnNow">☄️ Now</button>
+        <button class="btn" id="btnNow">☄️ Now</button>
         <button class="btn" id="btnGeo">🛰️ Use My Location</button>
-        <select id="presets" class="btn">
-          <option value="">🧭 Presets…</option>
-          <option value="33.422,-111.822">Mesa, AZ</option>
-          <option value="19.826,-155.470">Mauna Kea</option>
-          <option value="51.477,0.000">Greenwich</option>
-          <option value="-33.868,151.209">Sydney</option>
-          <option value="28.300,-16.509">Teide</option>
-        </select>
       </div>
     </details>
 
@@ -138,7 +125,7 @@ html.night #redveilNote{display:inline}
     <details open>
       <summary><span class="chev">▶</span> ☀️🌙 Sun & Moon</summary>
       <div class="card">
-        <div class="list" style="grid-template-columns:repeat(2,minmax(160px,1fr))">
+        <div class="list" style="display:grid;grid-template-columns:repeat(2,minmax(160px,1fr));gap:8px">
           <div class="item">🌅 Sunrise <span style="margin-left:auto"><strong id="sunrise">—</strong></span></div>
           <div class="item">🌇 Sunset <span style="margin-left:auto"><strong id="sunset">—</strong></span></div>
           <div class="item">🌙↑ Moonrise <span style="margin-left:auto"><strong id="moonrise">—</strong></span></div>
@@ -159,7 +146,6 @@ html.night #redveilNote{display:inline}
         <div class="row"><span class="note" id="launchStatus">Fetching upcoming SpaceX launches near KSC/VBG…</span></div>
       </div>
     </details>
-
   </aside>
 
   <div id="canvasWrap">
@@ -183,7 +169,6 @@ html.night #redveilNote{display:inline}
       <button class="btn" id="resetView" style="margin-left:auto">🔄 Reset View</button>
     </div>
     <div id="miniCal" class="row">
-      <!-- calendar buttons injected here -->
       <span id="calInfo">—</span>
     </div>
   </div>
@@ -192,7 +177,7 @@ html.night #redveilNote{display:inline}
 <div id="toast" style="position:fixed;left:16px;bottom:16px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:12px;color:#eaf2ff;opacity:0;transform:translateY(8px);transition:.25s;box-shadow:0 12px 28px #000a">—</div>
 
 <script>
-window.onerror = m => { toast('Error: ' + m, 6000); };
+window.onerror = m => { const el=document.getElementById('toast'); el.textContent='Error: '+m; el.style.opacity=1; };
 
 const DEG=Math.PI/180, RAD=180/Math.PI;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -236,18 +221,15 @@ const KSC={name:"KSC/Cape", lat:28.6084, lon:-80.6043}, VBG={name:"Vandenberg", 
 let launches=[];
 let activeId = null;
 
-// Resize
 function safeSize(){ let w=wrap.clientWidth, h=wrap.clientHeight; if(!w||!h){ w=Math.max(640, Math.floor(window.innerWidth*0.9)); h=Math.max(380, Math.floor(window.innerHeight*0.6)); wrap.style.minHeight=h+'px'; } return {w,h}; }
-function resize(){ const dpr=Math.max(1,Math.min(2.5,window.devicePixelRatio||1)); const s=safeSize(); W=s.w; H=s.h; R=Math.min(W,H)/2;
+function resize(){ const dpr=Math.max(1,Math.min(2.5,window.devicePixelRatio||1)); const s=safeSize(); W=s.w; H=s.h; if(!W||!H){ W=960; H=540; } R=Math.min(W,H)/2;
   sky.width=Math.floor(W*dpr); sky.height=Math.floor(H*dpr); ol.width=sky.width; ol.height=sky.height;
   sky.style.width=W+'px'; sky.style.height=H+'px'; ol.style.width=W+'px'; ol.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0); octx.setTransform(dpr,0,0,dpr,0,0); whEl.textContent=W+'×'+H; draw(true); }
 
-// Time helpers
 function currentTime(){ return new Date(baseTime.getTime() + offsetSeconds*1000); }
 function updateDeltaRead(){ const s=Math.abs(offsetSeconds); const sign=offsetSeconds>=0?"+":"−"; const d=Math.floor(s/86400); const h=Math.floor((s%86400)/3600); const m=Math.floor((s%3600)/60); let txt=`${sign}`; if(d) txt+=`${d}d `; if(h) txt+=`${h}h `; txt+=`${m}m`; deltaRead.textContent=txt; }
 
-// Projection & drawing
 function project(az, alt){ const theta=(Math.PI/2 - alt), maxTheta=fov/2; if(theta>maxTheta) return null; const r=(theta/maxTheta)*R*scale;
   let x=r*Math.sin(az + yaw), y=-r*Math.cos(az + yaw); const c=Math.cos(pitch); const yy=y*c; if(mirror) x=-x; return {x:W/2+x, y:H/2+yy, r}; }
 function drawBackground(first=false){ ctx.clearRect(0,0,W,H); const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,R*1.12); g.addColorStop(0,"rgba(6,16,30,0)"); g.addColorStop(1,"rgba(0,0,0,0.7)"); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
@@ -264,7 +246,6 @@ function drawConstellations(){ if(!showConst) return; ctx.save(); ctx.strokeStyl
 function drawRadiants(){ if(!showRadiants) return; const phase=animateRadiants? (Date.now()%2000)/2000 : 0.3; const pulse=0.6+0.4*Math.sin(phase*2*Math.PI);
   for(const r of RADIANTS){ const {az,alt}=azAltFromRADec(r.ra,r.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; const base=8, rad=base+6*pulse; octx.beginPath(); octx.arc(p.x,p.y,rad+3,0,2*Math.PI); octx.fillStyle="rgba(120,220,255,0.12)"; octx.fill(); octx.beginPath(); octx.arc(p.x,p.y,rad,0,2*Math.PI); octx.strokeStyle="rgba(160,240,255,0.8)"; octx.lineWidth=1; octx.setLineDash([4,3]); octx.stroke(); octx.setLineDash([]); if(showLabels){ octx.fillStyle="#ddfaff"; octx.font="11px system-ui"; octx.fillText(`✴ ${r.name}`, p.x+10, p.y-8); octx.fillStyle="#9bd8ff"; octx.fillText(r.when, p.x+10, p.y+6);} } }
 
-// Launches (LL2)
 async function fetchLaunches(){
   try{
     launchStatus.textContent="Fetching from Launch Library 2…";
@@ -314,12 +295,12 @@ function renderLaunchList(){
     activeId = L.id; baseTime = new Date(L.net.getTime()); offsetSeconds = 0;
     document.getElementById('timeScrub').value = 0; updateDeltaRead();
     const br = bearingTo(L.site.lat*DEG, L.site.lon*DEG); yaw = -br; pitch = 0;
-    renderMiniCalendar(); // reflect new date in mini cal
-    toast("Jumped to NET — trajectory overlay active");
+    renderMiniCalendar();
+    const el=document.getElementById('toast'); el.textContent='Jumped to NET — trajectory overlay active'; el.style.opacity=1; setTimeout(()=>el.style.opacity=0,1400);
   });
 }
 function updateCountdowns(){
-  if(!launches.length) { launchBadge.style.display='none'; return; }
+  if(!launches.length){ launchBadge.style.display='none'; return; }
   let soonest=null;
   const cds=document.querySelectorAll('.cd');
   cds.forEach(span=>{
@@ -338,7 +319,6 @@ function updateCountdowns(){
   }
 }
 
-// Trajectory approx
 function classifyAzimuth(site, orbit){
   const o=(orbit||"").toUpperCase();
   if(site.name.includes("Vandenberg")){
@@ -391,11 +371,10 @@ function drawLaunchTrajectory(){
   let closest=pts[0]; let dmin=1e9;
   for(const p of pts){ const d=Math.abs(p.tMin - tNowMin); if(d<dmin){ dmin=d; closest=p; } }
   if(closest){ octx.fillStyle="#ffd36e"; octx.beginPath(); octx.arc(closest.x, closest.y, 4, 0, 2*Math.PI); octx.fill();
-    if(true){ octx.font="11px system-ui"; octx.fillText("⤴︎ Launch (approx)", closest.x+8, closest.y-6); } }
+    octx.font="11px system-ui"; octx.fillText("⤴︎ Launch (approx)", closest.x+8, closest.y-6); }
   octx.restore();
 }
 
-// Rise/Set
 function localMidnightBase(){ const b=baseTime; return new Date(b.getFullYear(), b.getMonth(), b.getDate(), 0,0,0); }
 function altOfSun(d){ const jd=jdFromDate(d); const L=lst(jd, lon); const s = sunEquatorial(jd); return azAltFromRADec(s.ra, s.dec, lat, L).alt; }
 function altOfMoon(d){ const jd=jdFromDate(d); const L=lst(jd, lon); const m = moonEquatorial(jd); return azAltFromRADec(m.ra, m.dec, lat, L).alt; }
@@ -414,24 +393,43 @@ function updateRiseSetUI(){ const {sunrise,sunset,moonrise,moonset,illum}=findEv
   document.getElementById('moonrise').textContent=fmtTime(moonrise); document.getElementById('moonset').textContent=fmtTime(moonset);
   document.getElementById('moonphase').textContent = illum.name; document.getElementById('moonillum').textContent = `(${Math.round(illum.fraction*100)}% lit)`; }
 
-// DSO list
+// DSO (trimmed for this patch)
 function dsoThumbSVG(type){ const colors={Galaxy:"#9ad1ff",Nebula:"#a4ffcc","Open Cluster":"#ffe6a3","Globular Cluster":"#ffd36e",PN:"#b6a0ff"}; const symbol= type==="Galaxy" ? "<ellipse cx='21' cy='21' rx='14' ry='7' fill='none' stroke='white' stroke-width='1.5'/>" : type==="Nebula" ? "<circle cx='21' cy='21' r='12' fill='url(#g)'/>" : "<g><circle cx='12' cy='18' r='2' fill='white'/><circle cx='20' cy='24' r='2' fill='white'/><circle cx='28' cy='16' r='2' fill='white'/></g>"; return `data:image/svg+xml;utf8,`+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 42'><defs><radialGradient id='g'><stop offset='0%' stop-color='${colors[type]||"#9ad1ff"}' stop-opacity='0.9'/><stop offset='100%' stop-color='${colors[type]||"#9ad1ff"}' stop-opacity='0.0'/></radialGradient></defs><rect width='42' height='42' rx='8' ry='8' fill='#08133a'/>${symbol}</svg>`); }
-function renderDSOList(){ const list=document.getElementById('dsoList'); const q=(document.getElementById('dsoSearch').value||"").toLowerCase(); const typ=document.getElementById('dsoType').value; const mlim=parseFloat(document.getElementById('dsoMagLimit').value||"12");
-  const filtered = DSO.filter(o=> (typ? o.type===typ : true) && (o.mag==null || o.mag<=mlim) && (q? o.name.toLowerCase().includes(q) : true) );
-  const html = filtered.map(o=>{ const img=dsoThumbSVG(o.type); const meta = `${o.type}${o.mag? ` • mag ${o.mag}`:""}${o.size? ` • ${o.size}`:""}${o.dist? ` • ${o.dist}`:""}`; return `<div class="item"><img class="thumb" src="${img}"/><div><div><strong>${o.name}</strong></div><div class="meta">${meta}</div></div></div>`; }).join("");
-  list.innerHTML = html || "<div class='item'><div>No results.</div></div>"; document.getElementById('dsoMagRead').textContent = mlim.toFixed(1);
-}
-document.getElementById('dsoSearch').addEventListener('input', renderDSOList);
-document.getElementById('dsoType').addEventListener('change', renderDSOList);
-document.getElementById('dsoMagLimit').addEventListener('input', renderDSOList);
 
-// View + mag filter
-function toast(msg, t=1600){ const el=document.getElementById('toast'); el.textContent = msg; el.style.opacity=1; el.style.transform='translateY(0)'; setTimeout(()=>{ el.style.opacity=0; el.style.transform='translateY(8px)'; }, t); }
+// Mini calendar
+const miniCal=document.getElementById('miniCal'); const calInfo=document.getElementById('calInfo');
+function startOfLocalDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function renderMiniCalendar(){
+  [...miniCal.querySelectorAll('.calbtn')].forEach(n=>n.remove());
+  const baseLocal = new Date(baseTime.getTime() + (new Date().getTimezoneOffset()*-60000));
+  const baseMid = startOfLocalDay(baseLocal);
+  const todayMid = startOfLocalDay(new Date());
+  for(let i=-7;i<=7;i++){
+    const day = new Date(baseMid.getTime() + i*86400000);
+    const btn=document.createElement('button');
+    btn.className='calbtn calbtn-'+i;
+    btn.innerHTML = `<span class="dow">${day.toLocaleDateString(undefined,{weekday:'short'})}</span><span class="day">${day.getDate()}</span><span class="mon">${day.toLocaleDateString(undefined,{month:'short'})}</span>`;
+    btn.onclick=()=>{ offsetSeconds = i*86400; clampScrub(); };
+    if(day.getTime()===todayMid.getTime()) btn.classList.add('today');
+    miniCal.insertBefore(btn, calInfo);
+  }
+  highlightMiniCal();
+  calInfo.textContent = baseLocal.toLocaleDateString(undefined,{year:'numeric', month:'long'}) + ' • drag or tap a day';
+}
+function highlightMiniCal(){
+  const dayIndex = Math.round(offsetSeconds/86400);
+  [...miniCal.querySelectorAll('.calbtn')].forEach((b,idx)=>{
+    const i = idx + (-7);
+    if(i===dayIndex) b.classList.add('active'); else b.classList.remove('active');
+  });
+}
+
+// Controls
+function toast(msg, t=1600){ const el=document.getElementById('toast'); el.textContent = msg; el.style.opacity=1; setTimeout(()=>{ el.style.opacity=0; }, t); }
 function setNow(){ const now=new Date(); baseTime=new Date(now.getTime()); offsetSeconds=0; document.getElementById('date').value=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`; document.getElementById('time').value=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`; document.getElementById('timeScrub').value="0"; updateDeltaRead(); draw(); updateRiseSetUI(); renderMiniCalendar(); }
 function fromInputs(){ const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00"; if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); const local=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); baseTime=new Date(local.getTime()-local.getTimezoneOffset()*60000); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); } lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; draw(); updateRiseSetUI(); renderMiniCalendar(); }
 document.getElementById('btnNow').onclick=setNow;
 document.getElementById('btnGeo').onclick=()=>{ if(!navigator.geolocation){ toast("Geolocation not supported"); return; } navigator.geolocation.getCurrentPosition(p=>{ document.getElementById('lat').value=p.coords.latitude.toFixed(6); document.getElementById('lon').value=p.coords.longitude.toFixed(6); fromInputs(); }, _=> toast("Couldn't get location")); };
-document.getElementById('presets').onchange=(e)=>{ const v=e.target.value; if(!v) return; const [la,lo]=v.split(',').map(Number); document.getElementById('lat').value=la; document.getElementById('lon').value=lo; fromInputs(); toast("Preset applied"); };
 ["lat","lon","date","time"].forEach(id=>document.getElementById(id).addEventListener('change', fromInputs));
 document.getElementById('zoom').oninput=(e)=>{ scale=parseFloat(e.target.value); draw(); };
 document.getElementById('fov').oninput=(e)=>{ fov=parseFloat(e.target.value)*DEG; draw(); };
@@ -445,53 +443,18 @@ document.getElementById('nightToggle').onclick=()=>{ document.documentElement.cl
 const magSlider=document.getElementById('magLimit'); const magRead=document.getElementById('magRead');
 magSlider.oninput=(e)=>{ magLimit=parseFloat(e.target.value); magRead.textContent=magLimit.toFixed(1); draw(); };
 
-// Time controls
 const scrub=document.getElementById('timeScrub');
-scrub.oninput=(e)=>{ playing=false; document.getElementById('play')?.textContent && (document.getElementById('play').textContent="▶ Play"); offsetSeconds=parseInt(e.target.value,10); updateDeltaRead(); draw(); highlightMiniCal(); };
+scrub.oninput=(e)=>{ offsetSeconds=parseInt(e.target.value,10); updateDeltaRead(); draw(); highlightMiniCal(); };
 document.getElementById('jumpMinusDay').onclick=()=>{ offsetSeconds -= 86400; clampScrub(); };
 document.getElementById('jumpMinus12h').onclick=()=>{ offsetSeconds -= 43200; clampScrub(); };
-document.getElementById('jumpNow').onclick=()=>{ offsetSeconds = 0; };
+document.getElementById('jumpNow').onclick=()=>{ offsetSeconds = 0; clampScrub(); };
 document.getElementById('jumpPlus12h').onclick=()=>{ offsetSeconds += 43200; clampScrub(); };
 document.getElementById('jumpPlusDay').onclick=()=>{ offsetSeconds += 86400; clampScrub(); };
 function clampScrub(){ offsetSeconds = Math.max(parseInt(scrub.min), Math.min(parseInt(scrub.max), offsetSeconds)); scrub.value=offsetSeconds; updateDeltaRead(); draw(); highlightMiniCal(); }
 
-// Play/pause & rate (kept compact; removed from header to reduce clutter)
-let playing=false, rate=60, lastT=performance.now();
-document.getElementById('resetView').onclick=()=>{ yaw=0; pitch=0; scale=1; document.getElementById('zoom').value=1; fov=180*DEG; document.getElementById('fov').value=180; draw(); };
-
-// Mini calendar
-const miniCal=document.getElementById('miniCal'); const calInfo=document.getElementById('calInfo');
-function startOfLocalDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
-function renderMiniCalendar(){
-  // remove existing date buttons
-  [...miniCal.querySelectorAll('.calbtn')].forEach(n=>n.remove());
-  const baseLocal = new Date(baseTime.getTime() + (new Date().getTimezoneOffset()*-60000)); // baseTime is UTC-based; convert to local
-  const baseMid = startOfLocalDay(baseLocal);
-  const todayMid = startOfLocalDay(new Date());
-  for(let i=-7;i<=7;i++){
-    const day = new Date(baseMid.getTime() + i*86400000);
-    const btn=document.createElement('button');
-    btn.className='calbtn btnless calbtn-'+i;
-    btn.innerHTML = `<span class="dow">${day.toLocaleDateString(undefined,{weekday:'short'})}</span><span class="day">${day.getDate()}</span><span class="mon">${day.toLocaleDateString(undefined,{month:'short'})}</span>`;
-    btn.onclick=()=>{ offsetSeconds = i*86400; clampScrub(); };
-    if(day.getTime()===todayMid.getTime()) btn.classList.add('today');
-    miniCal.insertBefore(btn, calInfo);
-  }
-  highlightMiniCal();
-  calInfo.textContent = baseLocal.toLocaleDateString(undefined,{year:'numeric', month:'long'}) + ' • drag or tap a day';
-}
-function highlightMiniCal(){
-  const dayIndex = Math.round(offsetSeconds/86400);
-  [...miniCal.querySelectorAll('.calbtn')].forEach((b,idx)=>{
-    const i = idx - 0 + (-7); // idx maps -7..+7
-    if(i===dayIndex) b.classList.add('active'); else b.classList.remove('active');
-  });
-}
-
-// Draw loop
 function draw(first=false){
-  const t=currentTime(); const jd=jdFromDate(t); currentJD=jd; currentLST=lst(jd, lon);
-  lstEl.textContent = (mod(currentLST,2*Math.PI)*12/Math.PI).toFixed(2).replace('.',':');
+  const t=new Date(baseTime.getTime() + offsetSeconds*1000); const jd=jdFromDate(t); currentJD=jd; currentLST=lst(jd, lon);
+  const LSThr=(mod(currentLST,2*Math.PI)*12/Math.PI).toFixed(2).split('.'); lstEl.textContent = `${LSThr[0]}:${LSThr[1]}`;
   clockRead.textContent = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
   ctx.save(); drawBackground(first); drawGrid(); drawMilkyWay(); drawEcliptic(); drawStars(); drawDSO(); drawConstellations(); ctx.restore();
   octx.clearRect(0,0,ol.width,ol.height); drawRadiants(); drawLaunchTrajectory();
@@ -505,15 +468,12 @@ function tick(){
   requestAnimationFrame(tick);
 }
 
-// Init
 async function init(){
   setNow();
   resize(); requestAnimationFrame(()=>resize()); requestAnimationFrame(()=>requestAnimationFrame(()=>resize()));
   window.addEventListener('resize', resize);
-  renderDSOList();
   await fetchLaunches();
   setInterval(()=>{ if(autoLaunch) fetchLaunches(); }, 3600*1000);
-  updateRiseSetUI();
   renderMiniCalendar();
   tick();
 }
