@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.14.1 (Mag Filter + Jumbo Scrubber)</title>
+<title>Pocket Planetarium — v1.14.2 (Mini Calendar + Quick Jumps)</title>
 <style>
 :root{ --bg:#040816; --ink:#eaf2ff; --muted:#a9c2ff; --edge:#1b2d6a; --panel:#0a1240; --accent:#7ee7ff; --warn:#ffd36e; --ok:#a4ffcc; }
 html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -23,7 +23,7 @@ body::before{content:""; position:fixed; inset:0; z-index:-3; background:
 #redveil{position:fixed;inset:0;pointer-events:none;background:rgba(255,40,40,0.18);opacity:0;transition:.2s;z-index:1000}
 html.night #redveil{opacity:1}
 
-#app{display:grid;grid-template-rows:78px 1fr 150px;grid-template-columns:480px 1fr;gap:14px;min-height:100vh;padding:14px;box-sizing:border-box}
+#app{display:grid;grid-template-rows:78px 1fr 180px;grid-template-columns:480px 1fr;gap:14px;min-height:100vh;padding:14px;box-sizing:border-box}
 header{grid-column:1/-1;display:flex;align-items:center;gap:12px}
 #brand{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,#09133b,#08112e);border:1px solid var(--edge);box-shadow:0 0 16px #000 inset, 0 0 28px rgba(126,231,255,.08)}
 #logo{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #b8fff7 0%, #6dd3ff 40%, #2a4bff 60%, #001637 72%); box-shadow:0 0 24px #69f2ff88}
@@ -36,7 +36,7 @@ header h1{margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba
   box-shadow: 0 0 0 1px #1a2f69, inset 0 0 80px rgba(130,180,255,.06); min-height:60vh}
 #sky{width:100%;height:100%;display:block;cursor:grab}
 #overlay{position:absolute;inset:0;pointer-events:none}
-#bottom{grid-row:3;grid-column:2;display:grid;grid-template-rows:auto auto;gap:10px;align-items:center;background:linear-gradient(180deg,#0a1338 0,#0b1230 100%);border:1px solid var(--edge);border-radius:16px;padding:16px;box-shadow:inset 0 0 40px rgba(126,231,255,.05)}
+#bottom{grid-row:3;grid-column:2;display:grid;grid-template-rows:auto auto;gap:12px;align-items:center;background:linear-gradient(180deg,#0a1338 0,#0b1230 100%);border:1px solid var(--edge);border-radius:16px;padding:16px;box-shadow:inset 0 0 40px rgba(126,231,255,.05)}
 
 .panel h3{margin:.4rem 0 .6rem;font-size:12px;color:#b8c9ff;text-transform:uppercase;letter-spacing:.16em}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:.45rem 0}
@@ -53,22 +53,21 @@ header h1{margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba
 .range::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8ff,#6cf);border:1px solid #2b6;box-shadow:0 0 10px #8ff}
 .range::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8ff,#6cf);border:1px solid #2b6;box-shadow:0 0 10px #8ff}
 
-/* Jumbo time scrubber */
+/* Jumbo scrubber */
 .range.jumbo{height:18px}
 .range.jumbo::-webkit-slider-thumb{width:28px;height:28px}
 .range.jumbo::-moz-range-thumb{width:28px;height:28px}
 
-/* Collapsible panels */
-details{border:1px solid var(--edge); border-radius:12px; background:#0b1442; margin:10px 0; padding:8px}
-summary{cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; font-weight:800}
-summary::-webkit-details-marker{display:none}
-summary .chev{transition:.2s}
-details[open] summary .chev{transform:rotate(90deg)}
-
-.card{border:1px solid #21406e;background:#0b1442;border-radius:12px;padding:10px}
-.list{display:grid;grid-template-columns:repeat(1,minmax(260px,1fr));gap:8px}
-.item{border:1px solid #1f376e;border-radius:10px;padding:.45rem .6rem;background:#0a1338;display:flex;gap:12px;align-items:center;justify-content:space-between}
-.meta{font-size:12px;color:#a9c2ff}
+/* Mini calendar */
+#miniCal{display:flex;gap:6px;align-items:center;flex-wrap:wrap; width:100%}
+.calbtn{cursor:pointer;border:1px solid #21406e;background:#0b1442;color:#dbe7ff;border-radius:10px;padding:.35rem .55rem; display:flex; flex-direction:column; align-items:center; min-width:58px}
+.calbtn .dow{font-size:10px;color:#a9c2ff;letter-spacing:.08em}
+.calbtn .day{font-size:16px;font-weight:900}
+.calbtn .mon{font-size:10px;color:#9ec3ff}
+.calbtn.active{background:#10205a;border-color:#3f69d6;box-shadow:0 0 0 2px rgba(126,231,255,.18) inset}
+.calbtn.today{border-color:#5ea9ff}
+#calInfo{margin-left:auto;color:#b9d3ff;font-size:12px;opacity:.9}
+.quick{padding:.45rem .6rem; font-weight:800;}
 
 #launchBadge{display:none}
 #redveilNote{display:none}
@@ -81,7 +80,7 @@ html.night #redveilNote{display:inline}
 <div id="app">
   <header>
     <div id="brand"><div id="logo"></div><h1>🪐 Pocket Planetarium</h1></div>
-    <span class="badge">v1.14.1</span>
+    <span class="badge">v1.14.2</span>
     <span class="pill">W×H <span id="wh">—</span></span>
     <span class="pill">LST <span id="lstRead">—</span></span>
     <span id="launchBadge" class="badge">🚀 Launch in <span id="badgeCountdown">—</span></span>
@@ -161,22 +160,6 @@ html.night #redveilNote{display:inline}
       </div>
     </details>
 
-    <details>
-      <summary><span class="chev">▶</span> 🌀 Deep Sky Catalog</summary>
-      <div class="card">
-        <div class="row">
-          <input id="dsoSearch" class="field" placeholder="Search (e.g., 'Andromeda', 'NGC 7000')"/>
-          <select id="dsoType" class="btn">
-            <option value="">All types</option>
-            <option>Galaxy</option><option>Nebula</option><option>Open Cluster</option><option>Globular Cluster</option><option>PN</option>
-          </select>
-          <span class="note">Max mag</span><input id="dsoMagLimit" type="range" class="range" min="0" max="12" value="10" step="0.1" style="flex:1"/>
-          <span class="pill">≤ <span id="dsoMagRead">10.0</span></span>
-        </div>
-        <div id="dsoList" class="list"></div>
-      </div>
-    </details>
-
   </aside>
 
   <div id="canvasWrap">
@@ -192,16 +175,16 @@ html.night #redveilNote{display:inline}
       <input id="timeScrub" class="range jumbo" type="range" min="-604800" max="604800" step="60" value="0" style="flex:1" />
       <span class="pill">Δ <span id="deltaRead">+0m</span></span>
       <span class="pill">🕒 <span id="clockRead">—:—:—</span></span>
-      <button class="btn" id="play">▶ Play</button>
-      <select id="rate" class="btn">
-        <option value="60">+1 min / sec</option>
-        <option value="300">+5 min / sec</option>
-        <option value="900">+15 min / sec</option>
-        <option value="3600">+1 hr / sec</option>
-      </select>
-      <button class="btn" id="rew">⏮︎ -1 hr</button>
-      <button class="btn" id="ff">⏭︎ +1 hr</button>
+      <button class="btn quick" id="jumpMinusDay">−1d</button>
+      <button class="btn quick" id="jumpMinus12h">−12h</button>
+      <button class="btn quick" id="jumpNow">Now</button>
+      <button class="btn quick" id="jumpPlus12h">+12h</button>
+      <button class="btn quick" id="jumpPlusDay">+1d</button>
       <button class="btn" id="resetView" style="margin-left:auto">🔄 Reset View</button>
+    </div>
+    <div id="miniCal" class="row">
+      <!-- calendar buttons injected here -->
+      <span id="calInfo">—</span>
     </div>
   </div>
 </div>
@@ -331,6 +314,7 @@ function renderLaunchList(){
     activeId = L.id; baseTime = new Date(L.net.getTime()); offsetSeconds = 0;
     document.getElementById('timeScrub').value = 0; updateDeltaRead();
     const br = bearingTo(L.site.lat*DEG, L.site.lon*DEG); yaw = -br; pitch = 0;
+    renderMiniCalendar(); // reflect new date in mini cal
     toast("Jumped to NET — trajectory overlay active");
   });
 }
@@ -383,8 +367,6 @@ function trajPointsForLaunch(L){
     const alt = clamp((altMax * up * down), 3*DEG, Math.PI/2);
     const drift = clamp((t+2)/10, 0, 1);
     const az = mod(brObs*(1-drift) + azNom*drift, 2*Math.PI);
-    const simTime = new Date((L.net? L.net.getTime() : Date.now()) + t*60000);
-    const jd=jdFromDate(simTime), LST=lst(jd, lon);
     const p=project(az, alt);
     if(p) pts.push({x:p.x,y:p.y, tMin:m});
   }
@@ -443,10 +425,10 @@ document.getElementById('dsoSearch').addEventListener('input', renderDSOList);
 document.getElementById('dsoType').addEventListener('change', renderDSOList);
 document.getElementById('dsoMagLimit').addEventListener('input', renderDSOList);
 
-// View controls + mag filter
+// View + mag filter
 function toast(msg, t=1600){ const el=document.getElementById('toast'); el.textContent = msg; el.style.opacity=1; el.style.transform='translateY(0)'; setTimeout(()=>{ el.style.opacity=0; el.style.transform='translateY(8px)'; }, t); }
-function setNow(){ const now=new Date(); baseTime=new Date(now.getTime()); offsetSeconds=0; document.getElementById('date').value=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`; document.getElementById('time').value=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`; document.getElementById('timeScrub').value="0"; updateDeltaRead(); draw(); updateRiseSetUI(); }
-function fromInputs(){ const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00"; if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); const local=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); baseTime=new Date(local.getTime()-local.getTimezoneOffset()*60000); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); } lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; draw(); updateRiseSetUI(); }
+function setNow(){ const now=new Date(); baseTime=new Date(now.getTime()); offsetSeconds=0; document.getElementById('date').value=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`; document.getElementById('time').value=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`; document.getElementById('timeScrub').value="0"; updateDeltaRead(); draw(); updateRiseSetUI(); renderMiniCalendar(); }
+function fromInputs(){ const d=document.getElementById('date').value; const t=document.getElementById('time').value||"00:00:00"; if(d){ const parts=d.split('-').map(Number); const tp=t.split(':').map(Number); const local=new Date(parts[0],parts[1]-1,parts[2],tp[0]||0,tp[1]||0,tp[2]||0||0); baseTime=new Date(local.getTime()-local.getTimezoneOffset()*60000); offsetSeconds=0; document.getElementById('timeScrub').value="0"; updateDeltaRead(); } lon=parseFloat(document.getElementById('lon').value||"-111.822")*DEG; lat=parseFloat(document.getElementById('lat').value||"33.422")*DEG; draw(); updateRiseSetUI(); renderMiniCalendar(); }
 document.getElementById('btnNow').onclick=setNow;
 document.getElementById('btnGeo').onclick=()=>{ if(!navigator.geolocation){ toast("Geolocation not supported"); return; } navigator.geolocation.getCurrentPosition(p=>{ document.getElementById('lat').value=p.coords.latitude.toFixed(6); document.getElementById('lon').value=p.coords.longitude.toFixed(6); fromInputs(); }, _=> toast("Couldn't get location")); };
 document.getElementById('presets').onchange=(e)=>{ const v=e.target.value; if(!v) return; const [la,lo]=v.split(',').map(Number); document.getElementById('lat').value=la; document.getElementById('lon').value=lo; fromInputs(); toast("Preset applied"); };
@@ -463,17 +445,50 @@ document.getElementById('nightToggle').onclick=()=>{ document.documentElement.cl
 const magSlider=document.getElementById('magLimit'); const magRead=document.getElementById('magRead');
 magSlider.oninput=(e)=>{ magLimit=parseFloat(e.target.value); magRead.textContent=magLimit.toFixed(1); draw(); };
 
-// Time controls (±7 days, jumbo slider)
+// Time controls
 const scrub=document.getElementById('timeScrub');
-scrub.oninput=(e)=>{ playing=false; document.getElementById('play').textContent="▶ Play"; offsetSeconds=parseInt(e.target.value,10); updateDeltaRead(); draw(); };
-document.getElementById('play').onclick=(e)=>{ playing=!playing; e.target.textContent= playing ? "⏸ Pause" : "▶ Play"; };
-document.getElementById('rate').onchange=(e)=>{ rate=parseInt(e.target.value,10); };
-document.getElementById('rew').onclick=()=>{ offsetSeconds -= 3600; scrub.value=offsetSeconds; updateDeltaRead(); draw(); };
-document.getElementById('ff').onclick=()=>{ offsetSeconds += 3600; scrub.value=offsetSeconds; updateDeltaRead(); draw(); };
+scrub.oninput=(e)=>{ playing=false; document.getElementById('play')?.textContent && (document.getElementById('play').textContent="▶ Play"); offsetSeconds=parseInt(e.target.value,10); updateDeltaRead(); draw(); highlightMiniCal(); };
+document.getElementById('jumpMinusDay').onclick=()=>{ offsetSeconds -= 86400; clampScrub(); };
+document.getElementById('jumpMinus12h').onclick=()=>{ offsetSeconds -= 43200; clampScrub(); };
+document.getElementById('jumpNow').onclick=()=>{ offsetSeconds = 0; };
+document.getElementById('jumpPlus12h').onclick=()=>{ offsetSeconds += 43200; clampScrub(); };
+document.getElementById('jumpPlusDay').onclick=()=>{ offsetSeconds += 86400; clampScrub(); };
+function clampScrub(){ offsetSeconds = Math.max(parseInt(scrub.min), Math.min(parseInt(scrub.max), offsetSeconds)); scrub.value=offsetSeconds; updateDeltaRead(); draw(); highlightMiniCal(); }
+
+// Play/pause & rate (kept compact; removed from header to reduce clutter)
+let playing=false, rate=60, lastT=performance.now();
 document.getElementById('resetView').onclick=()=>{ yaw=0; pitch=0; scale=1; document.getElementById('zoom').value=1; fov=180*DEG; document.getElementById('fov').value=180; draw(); };
 
+// Mini calendar
+const miniCal=document.getElementById('miniCal'); const calInfo=document.getElementById('calInfo');
+function startOfLocalDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function renderMiniCalendar(){
+  // remove existing date buttons
+  [...miniCal.querySelectorAll('.calbtn')].forEach(n=>n.remove());
+  const baseLocal = new Date(baseTime.getTime() + (new Date().getTimezoneOffset()*-60000)); // baseTime is UTC-based; convert to local
+  const baseMid = startOfLocalDay(baseLocal);
+  const todayMid = startOfLocalDay(new Date());
+  for(let i=-7;i<=7;i++){
+    const day = new Date(baseMid.getTime() + i*86400000);
+    const btn=document.createElement('button');
+    btn.className='calbtn btnless calbtn-'+i;
+    btn.innerHTML = `<span class="dow">${day.toLocaleDateString(undefined,{weekday:'short'})}</span><span class="day">${day.getDate()}</span><span class="mon">${day.toLocaleDateString(undefined,{month:'short'})}</span>`;
+    btn.onclick=()=>{ offsetSeconds = i*86400; clampScrub(); };
+    if(day.getTime()===todayMid.getTime()) btn.classList.add('today');
+    miniCal.insertBefore(btn, calInfo);
+  }
+  highlightMiniCal();
+  calInfo.textContent = baseLocal.toLocaleDateString(undefined,{year:'numeric', month:'long'}) + ' • drag or tap a day';
+}
+function highlightMiniCal(){
+  const dayIndex = Math.round(offsetSeconds/86400);
+  [...miniCal.querySelectorAll('.calbtn')].forEach((b,idx)=>{
+    const i = idx - 0 + (-7); // idx maps -7..+7
+    if(i===dayIndex) b.classList.add('active'); else b.classList.remove('active');
+  });
+}
+
 // Draw loop
-let currentJD=0, currentLST=0;
 function draw(first=false){
   const t=currentTime(); const jd=jdFromDate(t); currentJD=jd; currentLST=lst(jd, lon);
   lstEl.textContent = (mod(currentLST,2*Math.PI)*12/Math.PI).toFixed(2).replace('.',':');
@@ -484,7 +499,7 @@ function draw(first=false){
 }
 function tick(){
   const now=performance.now(); const dt=(now-lastT)/1000; lastT=now;
-  if(playing){ offsetSeconds+=rate*dt; scrub.value=Math.round(offsetSeconds); updateDeltaRead(); }
+  if(playing){ offsetSeconds+=rate*dt; scrub.value=Math.round(offsetSeconds); updateDeltaRead(); highlightMiniCal(); }
   draw();
   updateCountdowns();
   requestAnimationFrame(tick);
@@ -499,6 +514,7 @@ async function init(){
   await fetchLaunches();
   setInterval(()=>{ if(autoLaunch) fetchLaunches(); }, 3600*1000);
   updateRiseSetUI();
+  renderMiniCalendar();
   tick();
 }
 init();
