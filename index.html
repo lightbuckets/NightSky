@@ -3,122 +3,116 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.5 (Cosmic UI, Full)</title>
+<title>Pocket Planetarium — v1.7 (Cosmic+ UltraSafe)</title>
 <style>
-  /* ===== Cosmic Theme ===== */
-  :root{
-    --bg:#050814; --panel:#0a1030; --panel2:#0c1442; --ink:#e9f3ff; --muted:#9fb8ff;
-    --accent:#7ee7ff; --accent2:#a4ffcc; --warn:#ffd36e;
-    --edge:#1b2d6a; --nebulaA:#0c1a4f; --nebulaB:#2a0a5b; --glow:#80faff;
-  }
-  @keyframes driftNebula {
-    0% { background-position: 0% 0%, 100% 0%; }
-    50% { background-position: 100% 50%, 0% 50%; }
-    100% { background-position: 0% 100%, 100% 100%; }
-  }
-  html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif}
-  body::before{
-    content:""; position:fixed; inset:0; z-index:-2;
-    background:
-      radial-gradient(1200px 800px at 70% 15%, rgba(33,78,150,.35), transparent 60%),
-      radial-gradient(1000px 700px at 20% 90%, rgba(180,50,200,.20), transparent 60%);
-    filter: blur(2px) saturate(110%);
-    animation: driftNebula 40s ease-in-out infinite alternate;
-  }
-  /* layered starfields */
-  .stars, .stars2, .stars3{ position:fixed; inset:0; z-index:-3; background:transparent; pointer-events:none }
-  .stars::after, .stars2::after, .stars3::after{
-    content:""; position:absolute; inset:-100px; background-repeat:repeat;
-    background-image: radial-gradient(2px 2px at 20px 30px, #fff8, transparent 50%),
-                      radial-gradient(1px 1px at 60px 80px, #dff, transparent 50%),
-                      radial-gradient(1.5px 1.5px at 120px 40px, #9ff, transparent 50%);
-    animation: twinkle 6s linear infinite;
-    opacity:.6;
-  }
-  .stars2::after{ transform:scale(1.5); opacity:.5; animation-duration:9s }
-  .stars3::after{ transform:scale(2.2); opacity:.35; animation-duration:12s }
-  @keyframes twinkle { 0%,100%{opacity:.55} 50%{opacity:.85} }
+/* ===== Cosmic+ Theme ===== */
+:root{
+  --bg:#040816; --ink:#eaf2ff; --muted:#a9c2ff; --edge:#1b2d6a;
+  --panel:#0a1240; --panel2:#0b154a; --accent:#7ee7ff; --accent2:#a4ffcc; --warn:#ffd36e;
+}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+/* Nebula backdrop */
+@keyframes drift {
+  0%{background-position:0% 0%, 100% 0%, 50% 0%}
+  50%{background-position:100% 60%, 0% 40%, 50% 60%}
+  100%{background-position:0% 100%, 100% 100%, 50% 100%}
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:-3;
+  background:
+    radial-gradient(1000px 700px at 70% 15%, rgba(80,140,255,.28), transparent 55%),
+    radial-gradient(1200px 900px at 15% 85%, rgba(210,70,255,.18), transparent 60%),
+    radial-gradient(800px 600px at 40% -10%, rgba(0,220,255,.12), transparent 60%);
+  filter:blur(1px) saturate(115%);
+  animation:drift 60s ease-in-out infinite;
+}
+/* Starfield layers */
+.stars,.stars2,.stars3{ position:fixed; inset:0; z-index:-4; pointer-events:none }
+.stars::after,.stars2::after,.stars3::after{
+  content:""; position:absolute; inset:-200px;
+  background-image:
+    radial-gradient(1.2px 1.2px at 10px 30px, #fff, transparent 55%),
+    radial-gradient(1px 1px at 70px 80px, #dff, transparent 55%),
+    radial-gradient(1.5px 1.5px at 140px 60px, #9ef, transparent 55%);
+  background-size: 200px 200px;
+  opacity:.6; animation:twinkle 9s linear infinite;
+}
+.stars2::after{ transform:scale(1.6); opacity:.5; animation-duration:12s }
+.stars3::after{ transform:scale(2.4); opacity:.35; animation-duration:15s }
+@keyframes twinkle{ 0%,100%{opacity:.55} 50%{opacity:.9} }
 
-  /* ===== Layout ===== */
-  #app{display:grid;grid-template-rows:72px 1fr 92px;grid-template-columns:360px 1fr;gap:12px;min-height:100vh;padding:14px;box-sizing:border-box}
-  header{grid-column:1/-1;display:flex;align-items:center;gap:14px}
-  #brand{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:14px;background:linear-gradient(180deg,#081233,#070f2a);border:1px solid var(--edge);box-shadow:0 0 14px #000 inset, 0 0 24px rgba(128,240,255,.08)}
-  #logo{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #b8fff7 0%, #6dd3ff 40%, #2a4bff 60%, #001637 70%); box-shadow:0 0 20px #69f2ff88;}
-  header h1{font-size:20px;margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba(126,231,255,.35)}
-  .chip{padding:.35rem .6rem;border-radius:999px;background:#0d1a44cc;color:var(--muted);font-size:12px;border:1px solid #2542a0}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:.25rem .6rem;border:1px solid #2542a0;border-radius:999px;color:var(--muted);font-size:12px;background:#0a1540cc}
+/* Layout */
+#app{display:grid;grid-template-rows:78px 1fr 92px;grid-template-columns:380px 1fr;gap:14px;min-height:100vh;padding:14px;box-sizing:border-box}
+header{grid-column:1/-1;display:flex;align-items:center;gap:12px}
+#brand{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,#09133b,#08112e);border:1px solid var(--edge);box-shadow:0 0 16px #000 inset, 0 0 28px rgba(126,231,255,.08)}
+#logo{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #b8fff7 0%, #6dd3ff 40%, #2a4bff 60%, #001637 72%); box-shadow:0 0 24px #69f2ff88}
+header h1{margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba(126,231,255,.35)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:.3rem .6rem;border-radius:999px;background:#0b1848;border:1px solid #1a2f69;color:#b9d3ff;font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:.28rem .6rem;border:1px solid #2441a0;border-radius:999px;color:#cde0ff;background:#0a1540cc;font-size:12px}
 
-  #left{grid-row:2/4;grid-column:1;background:linear-gradient(180deg, #0c1442, #091035 60%, #07102b); border:1px solid var(--edge); border-radius:16px; padding:12px; overflow:auto; box-shadow:inset 0 0 40px rgba(130,180,255,.08)}
-  #canvasWrap{grid-row:2;grid-column:2;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--edge);
-    background: radial-gradient(900px 650px at 50% 50%, #050b1a 0%, #050a17 70%, #04070c 100%);
-    box-shadow: 0 0 0 1px #1a2f69, inset 0 0 80px rgba(130,180,255,.06);
-    min-height:60vh
-  }
-  #sky{width:100%;height:100%;display:block;cursor:grab}
-  #overlay{position:absolute;inset:0;pointer-events:none}
-  #bottom{grid-row:3;grid-column:2;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#0a1338 0,#0b1230 100%);border:1px solid var(--edge);border-radius:16px;padding:12px;box-shadow:inset 0 0 40px rgba(126,231,255,.05)}
+#left{grid-row:2/4;grid-column:1;background:linear-gradient(180deg,#0b154a,#0a1340 60%,#09102f); border:1px solid var(--edge); border-radius:16px; padding:12px; overflow:auto; box-shadow:inset 0 0 40px rgba(126,231,255,.08)}
+#canvasWrap{grid-row:2;grid-column:2;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--edge);
+  background: radial-gradient(900px 650px at 50% 50%, #050b1a 0%, #050a17 70%, #04070c 100%);
+  box-shadow: 0 0 0 1px #1a2f69, inset 0 0 80px rgba(130,180,255,.06);
+  min-height:60vh
+}
+#sky{width:100%;height:100%;display:block;cursor:grab}
+#overlay{position:absolute;inset:0;pointer-events:none}
+#bottom{grid-row:3;grid-column:2;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#0a1338 0,#0b1230 100%);border:1px solid var(--edge);border-radius:16px;padding:12px;box-shadow:inset 0 0 40px rgba(126,231,255,.05)}
 
-  .panel h3{margin:.4rem 0 .6rem 0;font-size:12px;color:#b8c9ff;text-transform:uppercase;letter-spacing:.16em}
-  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:.35rem 0}
-  .field{display:flex;flex-direction:column;gap:6px;min-width:146px;position:relative}
-  .field label{font-size:12px;color:var(--muted)}
-  .field input,.field select{background:#08133a;border:1px solid #203780;color:var(--ink);border-radius:12px;padding:.55rem .7rem;font-size:14px;outline:none;box-shadow:0 0 0 0 rgba(128,240,255,.0);transition:.15s}
-  .field input:focus,.field select:focus{box-shadow:0 0 0 3px rgba(128,240,255,.25)}
+.panel h3{margin:.4rem 0 .6rem;font-size:12px;color:#b8c9ff;text-transform:uppercase;letter-spacing:.16em}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:.4rem 0}
+.field{display:flex;flex-direction:column;gap:6px;min-width:150px}
+.field label{font-size:12px;color:var(--muted)}
+.field input,.field select{background:#08133a;border:1px solid #203780;color:var(--ink);border-radius:12px;padding:.6rem .72rem;font-size:14px;outline:none;transition:.15s}
+.field input:focus,.field select:focus{box-shadow:0 0 0 3px rgba(128,240,255,.25)}
 
-  /* Fun, cosmic buttons */
-  .btn{--c1:#10306a; --c2:#0c2250; background:linear-gradient(135deg,var(--c1),var(--c2));border:1px solid #2847a0;color:var(--ink);padding:.62rem .86rem;border-radius:12px;font-weight:800;cursor:pointer;transition:.15s;user-select:none;letter-spacing:.2px;
-       box-shadow:0 6px 18px #0008, inset 0 0 0 0 rgba(126,231,255,.0)}
-  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px #000a, inset 0 0 40px rgba(126,231,255,.08)}
-  .btn:active{transform:translateY(0)}
-  .btn.accent{--c1:#0b2c64;--c2:#0f3a83}
-  .btn.comet{position:relative;overflow:hidden}
-  .btn.comet::after{content:""; position:absolute; inset:-120% 60% auto -60%; height:300%; width:60%; transform:rotate(25deg);
-    background:linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent); animation: comet 3s linear infinite}
-  @keyframes comet{0%{transform:translateX(-120%) rotate(25deg)}100%{transform:translateX(220%) rotate(25deg)}}
+/* Fun buttons */
+.btn{--c1:#10306a; --c2:#0c2250; background:linear-gradient(135deg,var(--c1),var(--c2));border:1px solid #2847a0;color:var(--ink);padding:.66rem .9rem;border-radius:12px;font-weight:800;cursor:pointer;transition:.15s;user-select:none;letter-spacing:.2px;
+     box-shadow:0 6px 18px #0008, inset 0 0 0 0 rgba(126,231,255,.0)}
+.btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px #000a, inset 0 0 40px rgba(126,231,255,.08)}
+.btn:active{transform:translateY(0)}
+.btn.accent{--c1:#0b2c64;--c2:#0f3a83}
+.btn.comet{position:relative;overflow:hidden}
+.btn.comet::after{content:""; position:absolute; inset:-120% 60% auto -60%; height:300%; width:60%; transform:rotate(25deg);
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent); animation: comet 3s linear infinite}
+@keyframes comet{0%{transform:translateX(-120%) rotate(25deg)}100%{transform:translateX(220%) rotate(25deg)}}
 
-  /* Toggle as star switches */
-  .toggle{display:inline-flex;align-items:center;gap:10px;padding:4px 6px;background:#08133a;border:1px solid #203780;border-radius:999px}
-  .toggle input{appearance:none;width:46px;height:26px;border-radius:999px;background:#0e1a45;position:relative;outline:none;border:1px solid #27406a;cursor:pointer;box-shadow:inset 0 0 12px #0009}
-  .toggle input:checked{background:linear-gradient(90deg,#0fa3b1,#14cba8)}
-  .toggle input::after{content:"✦"; position:absolute;width:20px;height:20px;border-radius:50%;background:#eaf7ff;color:#0a1632;display:grid;place-items:center;top:2.8px;left:3px;transition:.2s; font-size:12px; text-shadow:0 0 10px #fff}
-  .toggle input:checked::after{left:23px; content:"✨"}
+/* Toggle switches */
+.toggle{display:inline-flex;align-items:center;gap:10px;padding:4px 6px;background:#08133a;border:1px solid #203780;border-radius:999px}
+.toggle input{appearance:none;width:46px;height:26px;border-radius:999px;background:#0e1a45;position:relative;outline:none;border:1px solid #27406a;cursor:pointer;box-shadow:inset 0 0 12px #0009}
+.toggle input:checked{background:linear-gradient(90deg,#0fa3b1,#14cba8)}
+.toggle input::after{content:"✦"; position:absolute;width:20px;height:20px;border-radius:50%;background:#eaf7ff;color:#0a1632;display:grid;place-items:center;top:2.8px;left:3px;transition:.2s; font-size:12px; text-shadow:0 0 10px #fff}
+.toggle input:checked::after{left:23px; content:"✨"}
 
-  .note{font-size:12px;color:#aac3ff}
+.note{font-size:12px;color:#aac3ff}
+.legend{position:absolute;left:10px;bottom:10px;font-size:12px;color:#c9deff;background:#07101cbb;padding:8px 10px;border-radius:10px;border:1px solid #1f357c;box-shadow:0 10px 30px #0008}
+.kbd{border:1px solid #2a3f64;background:#0e1a30;border-radius:6px;padding:.05rem .35rem;font-size:12px;color:#c5d6ff}
+canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
+#canvasWrap::before{content:""; position:absolute; inset:-2px; border-radius:16px; pointer-events:none; box-shadow:0 0 120px 20px rgba(126,231,255,.08), inset 0 0 120px rgba(84,160,255,.06)}
 
-  .legend{
-    position:absolute;left:10px;bottom:10px;font-size:12px;color:#c9deff;background:#07101cbb;padding:8px 10px;border-radius:10px;border:1px solid #1f357c;
-    box-shadow:0 10px 30px #0008
-  }
-  #toast{position:fixed;left:16px;bottom:16px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:12px;color:var(--ink);opacity:0;transform:translateY(8px);transition:.25s;box-shadow:0 12px 28px #000a}
-  #toast.show{opacity:1;transform:translateY(0)}
-  .kbd{border:1px solid #2a3f64;background:#0e1a30;border-radius:6px;padding:.05rem .35rem;font-size:12px;color:var(--muted)}
-  canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
-  /* Big soft glow around the sky viewport */
-  #canvasWrap::before{
-    content:""; position:absolute; inset:-2px; border-radius:16px; pointer-events:none;
-    box-shadow:0 0 120px 20px rgba(126,231,255,.08), inset 0 0 120px rgba(84,160,255,.06);
-  }
+#toast{position:fixed;left:16px;bottom:16px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:12px;color:var(--ink);opacity:0;transform:translateY(8px);transition:.25s;box-shadow:0 12px 28px #000a}
+#toast.show{opacity:1;transform:translateY(0)}
+#debug{position:absolute;right:10px;top:10px;background:#07101cbb;border:1px solid #122341;border-radius:8px;padding:6px 8px;font-size:12px;color:#cfe1ff;pointer-events:none}
 
-  /* Mini badges */
-  .badge{display:inline-flex;align-items:center;gap:6px;padding:.25rem .5rem;border-radius:10px;background:#0b1848;border:1px solid #1a2f69;color:#b9d3ff;font-size:12px}
+/* Night vision mode */
+.night body, .night #left, .night #canvasWrap, .night #bottom, .night header{ filter:hue-rotate(-150deg) saturate(120%); }
+.night .legend, .night .pill, .night .badge{ filter:hue-rotate(-150deg) }
 </style>
 </head>
 <body>
 <div class="stars"></div><div class="stars2"></div><div class="stars3"></div>
-
 <div id="app">
   <header>
     <div id="brand">
       <div id="logo"></div>
-      <h1>Pocket Planetarium</h1>
+      <h1>🪐 Pocket Planetarium</h1>
     </div>
-    <span class="chip">v1.5 Cosmic</span>
-    <span class="pill">🔭 Zoom <span id="zoomRead">1.0×</span></span>
-    <span class="pill">🎯 FOV <span id="fovRead">180°</span></span>
-    <span class="pill">📍 Lat <span id="latRead">—</span></span>
-    <span class="pill">⏱️ LST <span id="lstRead">—</span></span>
+    <span class="badge">v1.7 Cosmic+ UltraSafe</span>
+    <span class="pill">W×H <span id="wh">—</span></span>
+    <span class="pill">LST <span id="lstRead">—</span></span>
     <span style="flex:1"></span>
-    <span class="badge">Tip: <span class="kbd">Shift</span> + Drag to tilt</span>
+    <button class="btn" id="nightToggle">🌘 Night Vision</button>
   </header>
 
   <aside id="left" class="panel">
@@ -145,7 +139,7 @@
     </div>
 
     <h3>🖼️ View</h3>
-    <div class="row dial">
+    <div class="row">
       <span class="note">Zoom</span>
       <input type="range" id="zoom" min="0.6" max="3.0" step="0.01" value="1.0"/>
       <span class="note">FOV</span>
@@ -187,6 +181,7 @@
       <div><strong>Legend:</strong> ● star, ◍ planet, ⌾ Messier</div>
       <div>Horizon = circle edge • North ↑</div>
     </div>
+    <div id="debug">debug: —</div>
   </div>
 
   <div id="bottom">
@@ -201,33 +196,26 @@
 <div id="toast"></div>
 
 <script>
-/* ===== Global error toast ===== */
+// Error toast
 window.onerror = function(msg){ const el=document.getElementById('toast'); el.textContent = 'Error: ' + msg; el.className='show'; setTimeout(()=>el.className='', 6000); };
 
-/* ===================== Utilities ===================== */
-const DEG = Math.PI/180, RAD = 180/Math.PI;
-const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
-const mod = (x,m)=>((x%m)+m)%m;
+// ===== Math & helpers =====
+const DEG=Math.PI/180, RAD=180/Math.PI;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const mod=(x,m)=>((x%m)+m)%m;
+const pad=n=>n.toString().padStart(2,'0');
 
 function jdFromDate(date){
-  const t = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(),
-                     date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds())/86400000 + 2440587.5;
-  return t;
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(),
+    date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds())/86400000 + 2440587.5;
 }
 function gmst(jd){
-  const T = (jd - 2451545.0)/36525.0;
-  let gmst = 67310.54841 + (876600*3600 + 8640184.812866)*T + 0.093104*T*T - 6.2e-6*T*T*T;
-  gmst = mod(gmst, 86400)/240.0;
-  return gmst*DEG;
+  const T=(jd-2451545.0)/36525.0;
+  let s=67310.54841 + (876600*3600 + 8640184.812866)*T + 0.093104*T*T - 6.2e-6*T*T*T;
+  return mod(s,86400)/240.0*DEG;
 }
 function lst(jd, lonRad){ return mod(gmst(jd) + lonRad, 2*Math.PI); }
-
-function hmsFromRad(alpha){
-  const h = mod(alpha,2*Math.PI)*12/Math.PI;
-  const hh = Math.floor(h);
-  const mm = Math.floor((h-hh)*60);
-  return \`\${hh.toString().padStart(2,'0')}:\${mm.toString().padStart(2,'0')}\`;
-}
+function hmsFromRad(alpha){ const h = mod(alpha,2*Math.PI)*12/Math.PI; const hh = Math.floor(h), mm=Math.floor((h-hh)*60); return `${pad(hh)}:${pad(mm)}`; }
 
 function azAltFromRADec(ra, dec, lat, lstRad){
   const H = mod(lstRad - ra, 2*Math.PI);
@@ -244,207 +232,199 @@ function radecFromEcliptic(lam, beta){
   const dec = Math.asin(clamp(sinDec,-1,1));
   const y = Math.sin(lam)*Math.cos(eps)-Math.tan(beta)*Math.sin(eps);
   const x = Math.cos(lam);
-  let ra = Math.atan2(y,x);
-  ra = mod(ra, 2*Math.PI);
+  let ra = Math.atan2(y,x); ra = mod(ra, 2*Math.PI);
   return {ra, dec};
 }
 
-/* ===================== Simplified planets ===================== */
-const PLANETS = [
-  { name:"Mercury", color:"#a7d0ff", R:2.6,  a:0.38709927, e:0.20563593, I:7.00497902, L:252.25032350, lp:77.45779628, o:48.33076593 },
-  { name:"Venus",   color:"#ffe6a3", R:3.0,  a:0.72333566, e:0.00677672, I:3.39467605, L:181.97909950, lp:131.60246718,o:76.67984255 },
-  { name:"Earth",   color:"#9be7ff", R:3.3,  a:1.00000261, e:0.01671123, I:-0.00001531,L:100.46457166, lp:102.93768193,o:0.0 },
-  { name:"Mars",    color:"#ffb18a", R:3.0,  a:1.52371034, e:0.09339410, I:1.84969142, L:-4.55343205, lp:-23.94362959,o:49.55953891 },
-  { name:"Jupiter", color:"#fff0b3", R:4.2,  a:5.20288700, e:0.04838624, I:1.30439695, L:34.39644051, lp:14.72847983, o:100.47390909 },
-  { name:"Saturn",  color:"#ffeec7", R:4.0,  a:9.53667594, e:0.05386179, I:2.48599187, L:49.95424423, lp:92.59887831, o:113.66242448 },
+// ===== Planets (simplified) =====
+const PLANETS=[
+  { name:"Mercury", color:"#a7d0ff", a:0.38709927, e:0.20563593, I:7.00497902, L:252.25032350, lp:77.45779628, o:48.33076593 },
+  { name:"Venus",   color:"#ffe6a3", a:0.72333566, e:0.00677672, I:3.39467605, L:181.97909950, lp:131.60246718, o:76.67984255 },
+  { name:"Earth",   color:"#9be7ff", a:1.00000261, e:0.01671123, I:-0.00001531, L:100.46457166, lp:102.93768193, o:0.0 },
+  { name:"Mars",    color:"#ffb18a", a:1.52371034, e:0.09339410, I:1.84969142, L:-4.55343205, lp:-23.94362959, o:49.55953891 },
+  { name:"Jupiter", color:"#fff0b3", a:5.20288700, e:0.04838624, I:1.30439695, L:34.39644051, lp:14.72847983, o:100.47390909 },
+  { name:"Saturn",  color:"#ffeec7", a:9.53667594, e:0.05386179, I:2.48599187, L:49.95424423, lp:92.59887831, o:113.66242448 },
 ];
 function planetPositionEcliptic(name, jd){
-  const T = (jd-2451545.0)/36525.0;
-  const p = PLANETS.find(p=>p.name===name);
-  const a=p.a, e=p.e, I=(p.I+0*T)*DEG, L=(p.L+36000.770*T)*DEG, lp=(p.lp+0*T)*DEG, o=(p.o+0*T)*DEG;
-  const M = mod(L - lp, 2*Math.PI);
-  let E = M;
-  for(let i=0;i<6;i++){ E = M + e*Math.sin(E); }
-  const nu = 2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2));
-  const r = a*(1-e*Math.cos(E));
-  const xh = r*(Math.cos(o)*Math.cos(nu+lp-o) - Math.sin(o)*Math.sin(nu+lp-o)*Math.cos(I));
-  const yh = r*(Math.sin(o)*Math.cos(nu+lp-o) + Math.cos(o)*Math.sin(nu+lp-o)*Math.cos(I));
-  const zh = r*(Math.sin(nu+lp-o)*Math.sin(I));
-  return {x:xh, y:yh, z:zh};
+  const p=PLANETS.find(x=>x.name===name);
+  const T=(jd-2451545.0)/36525.0;
+  const a=p.a, e=p.e, I=(p.I)*DEG, L=(p.L+36000.770*T)*DEG, lp=(p.lp)*DEG, o=(p.o)*DEG;
+  const M=mod(L - lp, 2*Math.PI);
+  let E=M; for(let i=0;i<6;i++) E = M + e*Math.sin(E);
+  const nu=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2), Math.sqrt(1-e)*Math.cos(E/2));
+  const r=a*(1 - e*Math.cos(E));
+  const x=r*(Math.cos(o)*Math.cos(nu+lp-o) - Math.sin(o)*Math.sin(nu+lp-o)*Math.cos(I));
+  const y=r*(Math.sin(o)*Math.cos(nu+lp-o) + Math.cos(o)*Math.sin(nu+lp-o)*Math.cos(I));
+  const z=r*(Math.sin(nu+lp-o)*Math.sin(I));
+  return {x,y,z};
 }
 function geocentricEquatorial(name, jd){
-  const eps = 23.43928*DEG;
-  const earth = planetPositionEcliptic("Earth", jd);
-  const pt = planetPositionEcliptic(name, jd);
-  const x = pt.x - earth.x, y = pt.y - earth.y, z = pt.z - earth.z;
-  const xe = x;
-  const ye = y*Math.cos(eps) - z*Math.sin(eps);
-  const ze = y*Math.sin(eps) + z*Math.cos(eps);
+  const eps=23.43928*DEG;
+  const e=planetPositionEcliptic("Earth", jd);
+  const p=planetPositionEcliptic(name, jd);
+  const x=p.x-e.x, y=p.y-e.y, z=p.z-e.z;
+  const xe=x;
+  const ye=y*Math.cos(eps) - z*Math.sin(eps);
+  const ze=y*Math.sin(eps) + z*Math.cos(eps);
   const ra = mod(Math.atan2(ye, xe), 2*Math.PI);
   const dec = Math.atan2(ze, Math.hypot(xe,ye));
   return {ra, dec};
 }
 
-/* ===================== Stars & Messier ===================== */
+// ===== Stars & Messier =====
 function seededRandom(seed){ let t=seed>>>0; return function(){ t=(t+0x6D2B79F5)|0; let r=Math.imul(t^(t>>>15),1|t); r^=r+Math.imul(r^(r>>>7),61|r); return ((r^(r>>>14))>>>0)/4294967296; };}
 function makeStars(n=6500, seed=2025){
   const rnd=seededRandom(seed), out=[];
-  for(let i=0;i<n;i++){ const u=rnd(), v=rnd(), w=rnd(); const ra=2*Math.PI*u; const x=Math.acos(1-2*v)-Math.PI/2; const bias=0.35*Math.sin(ra*0.5)+0.45*Math.sin((ra+1.2)*1.0); const dec=clamp(x+bias*DEG*15,-Math.PI/2,Math.PI/2); const mag=1.3 + -2*Math.log10(0.02+w*w); out.push({ra,dec,mag}); } return out;
+  for(let i=0;i<n;i++){
+    const u=rnd(), v=rnd(), w=rnd();
+    const ra=2*Math.PI*u;
+    const x=Math.acos(1-2*v)-Math.PI/2;
+    const bias=0.35*Math.sin(ra*0.5)+0.45*Math.sin((ra+1.2)*1.0);
+    const dec=clamp(x+bias*DEG*15,-Math.PI/2,Math.PI/2);
+    const mag=1.3 + -2*Math.log10(0.02+w*w);
+    out.push({ra,dec,mag});
+  }
+  return out;
 }
 const stars = makeStars();
 function raRad(h,m){ return ((h*15)+(m*0.25))*DEG; }
-const MESSIER = [
-  {n:'M31 Andromeda',h:0,m:42, d:41.3},{n:'M42 Orion',h:5,m:35, d:-5.5},{n:'M45 Pleiades',h:3,m:47, d:24.1},
-  {n:'M13 Hercules',h:16,m:41, d:36.5},{n:'M8 Lagoon',h:18,m:3, d:-24.4},{n:'M20 Trifid',h:18,m:2, d:-23.0},
-  {n:'M17 Swan',h:18,m:20, d:-16.2},{n:'M16 Eagle',h:18,m:19, d:-13.8},{n:'M27 Dumbbell',h:20,m:0, d:22.7},
-  {n:'M57 Ring',h:18,m:53, d:33.0},{n:'M51 Whirlpool',h:13,m:30, d:47.2},{n:'M44 Beehive',h:8,m:40, d:19.7},
-  {n:'M1 Crab',h:5,m:34, d:22.0},{n:'M3',h:13,m:42, d:28.4},{n:'M4',h:16,m:23, d:-26.5},
-  {n:'M33 Triangulum',h:1,m:33, d:30.7},{n:'M36',h:5,m:36, d:34.1},{n:'M37',h:5,m:52, d:32.3},
-  {n:'M38',h:5,m:29, d:35.8},{n:'M39',h:21,m:32, d:48.4},{n:'M104 Sombrero',h:12,m:40, d:-11.6}
+const MESSIER=[
+ {n:'M31 Andromeda',h:0,m:42, d:41.3},{n:'M42 Orion',h:5,m:35, d:-5.5},{n:'M45 Pleiades',h:3,m:47, d:24.1},
+ {n:'M13 Hercules',h:16,m:41, d:36.5},{n:'M8 Lagoon',h:18,m:3, d:-24.4},{n:'M20 Trifid',h:18,m:2, d:-23.0},
+ {n:'M17 Swan',h:18,m:20, d:-16.2},{n:'M16 Eagle',h:18,m:19, d:-13.8},{n:'M27 Dumbbell',h:20,m:0, d:22.7},
+ {n:'M57 Ring',h:18,m:53, d:33.0},{n:'M51 Whirlpool',h:13,m:30, d:47.2},{n:'M44 Beehive',h:8,m:40, d:19.7},
+ {n:'M1 Crab',h:5,m:34, d:22.0},{n:'M3',h:13,m:42, d:28.4},{n:'M4',h:16,m:23, d:-26.5},
+ {n:'M33 Triangulum',h:1,m:33, d:30.7},{n:'M36',h:5,m:36, d:34.1},{n:'M37',h:5,m:52, d:32.3},
+ {n:'M38',h:5,m:29, d:35.8},{n:'M39',h:21,m:32, d:48.4},{n:'M104 Sombrero',h:12,m:40, d:-11.6}
 ].map(o=>({name:o.n, ra:raRad(o.h,o.m), dec:o.d*DEG}));
 
-/* ===================== Drawing + Projection ===================== */
-const sky = document.getElementById('sky');
-const ol = document.getElementById('overlay');
-const wrap = document.getElementById('canvasWrap');
-const ctx = sky.getContext('2d');
-const octx = ol.getContext('2d');
+// ===== Drawing & Projection =====
+const sky=document.getElementById('sky');
+const ol=document.getElementById('overlay');
+const wrap=document.getElementById('canvasWrap');
+const ctx=sky.getContext('2d');
+const octx=ol.getContext('2d');
+const whEl=document.getElementById('wh');
+const lstEl=document.getElementById('lstRead');
+const debugEl=document.getElementById('debug');
 
-let W=0,H=0, R=0, scale=1, fov=180*DEG;
+let W=0,H=0,R=0, scale=1, fov=180*DEG;
 let lat = 33.422*DEG, lon = -111.822*DEG;
 let time = new Date();
-let dragging=false, rotating=false, lastX=0, lastY=0;
-let yaw=0, pitch=0;
-let mirror=false, showLabels=true, showGrid=true, showEcliptic=true, showMW=true, showMessier=true, showPlanets=true;
+let yaw=0, pitch=0, mirror=false;
+let showLabels=true, showGrid=true, showEcliptic=true, showMW=true, showMessier=true, showPlanets=true;
 
+function safeSize(){
+  let w=wrap.clientWidth, h=wrap.clientHeight;
+  if(!w || !h){ w=Math.floor(window.innerWidth*0.9); h=Math.floor(window.innerHeight*0.6); wrap.style.minHeight=h+'px'; }
+  return {w,h};
+}
 function resize(){
-  const dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio||1));
-  W = Math.max(1, wrap.clientWidth);
-  H = Math.max(1, wrap.clientHeight);
-  if(H < 120){ H = Math.max(400, Math.floor(window.innerHeight * 0.6)); wrap.style.minHeight = H + "px"; }
-  R = Math.min(W,H)/2;
-  sky.width = Math.floor(W*dpr);
-  sky.height = Math.floor(H*dpr);
-  ol.width = sky.width;
-  ol.height = sky.height;
-  sky.style.width = W + "px";
-  sky.style.height = H + "px";
-  ol.style.width = W + "px";
-  ol.style.height = H + "px";
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  octx.setTransform(dpr,0,0,dpr,0,0);
-  draw();
+  const dpr=Math.max(1,Math.min(2.5,window.devicePixelRatio||1));
+  const s=safeSize(); W=Math.max(1,s.w); H=Math.max(1,s.h); R=Math.min(W,H)/2;
+  sky.width=Math.floor(W*dpr); sky.height=Math.floor(H*dpr);
+  ol.width=sky.width; ol.height=sky.height;
+  sky.style.width=W+'px'; sky.style.height=H+'px';
+  ol.style.width=W+'px'; ol.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0); octx.setTransform(dpr,0,0,dpr,0,0);
+  whEl.textContent=W+'×'+H;
+  draw(true);
 }
 
 function project(az, alt){
-  const theta = (Math.PI/2 - alt);
+  const theta=(Math.PI/2 - alt);
   const maxTheta = fov/2;
   if(theta>maxTheta) return null;
-  const r = (theta/maxTheta) * R * scale;
-  let x = r*Math.sin(az + yaw);
-  let y = -r*Math.cos(az + yaw);
-  const c = Math.cos(pitch);
-  const yy = y*c;
+  const r=(theta/maxTheta)*R*scale;
+  let x=r*Math.sin(az + yaw);
+  let y=-r*Math.cos(az + yaw);
+  const c=Math.cos(pitch);
+  const yy=y*c;
   if(mirror) x = -x;
   return {x:W/2 + x, y:H/2 + yy, r};
 }
 
-function drawBackground(){
+function drawBackground(first=false){
   ctx.clearRect(0,0,W,H);
-  const g = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,R*1.1);
-  g.addColorStop(0,"rgba(4,12,24,0)");
-  g.addColorStop(1,"rgba(0,0,0,0.6)");
+  // vignette + horizon
+  const g = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,R*1.12);
+  g.addColorStop(0,"rgba(6,16,30,0)");
+  g.addColorStop(1,"rgba(0,0,0,0.7)");
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle="#203456"; ctx.lineWidth=1.25;
+  ctx.strokeStyle="#203456"; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.arc(W/2,H/2,R*scale,0,2*Math.PI); ctx.stroke();
-  const n = project(0,0); if(n){
-    ctx.fillStyle="#9bb2da"; ctx.font="12px system-ui";
-    ctx.fillText("N", n.x-3, n.y-6);
+  // North marker
+  const n = project(0,0); if(n){ ctx.fillStyle="#9bb2da"; ctx.font="12px system-ui"; ctx.fillText("N", n.x-3, n.y-6); }
+  // First draw: friendly cue
+  if(first){
+    ctx.fillStyle="#fff"; ctx.font="bold 16px system-ui";
+    ctx.fillText("🚀 Ready", W/2-40, H/2-44);
+    ctx.strokeStyle="#fff"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(W/2-28,H/2); ctx.lineTo(W/2+28,H/2); ctx.moveTo(W/2,H/2-28); ctx.lineTo(W/2,H/2+28); ctx.stroke();
   }
 }
 
 function drawGrid(lstRad){
   if(!showGrid) return;
-  ctx.strokeStyle="#1f3358"; ctx.lineWidth=0.8;
-  ctx.setLineDash([4,6]);
-  ctx.beginPath();
+  ctx.strokeStyle="#1f3358"; ctx.lineWidth=0.9; ctx.setLineDash([4,6]); ctx.beginPath();
   for(let alt=75*DEG; alt>0; alt-=15*DEG){
-    const theta = (Math.PI/2 - alt);
-    const r = (theta/(fov/2))*R*scale;
-    ctx.moveTo(W/2+r, H/2);
-    ctx.arc(W/2,H/2,r,0,2*Math.PI);
+    const theta=(Math.PI/2 - alt);
+    const r=(theta/(fov/2))*R*scale;
+    ctx.moveTo(W/2+r, H/2); ctx.arc(W/2,H/2,r,0,2*Math.PI);
   }
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.strokeStyle="#25406b"; ctx.lineWidth=0.8;
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle="#25406b"; ctx.lineWidth=0.9;
   for(let az=0; az<360; az+=30){
-    const a = az*DEG;
-    const p1 = project(a, 0.001);
-    const p2 = project(a, Math.PI/2-0.001);
-    if(p1 && p2){
-      ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
-      ctx.fillStyle="#7ea1d6"; ctx.font="11px system-ui";
-      ctx.fillText(\`\${az}°\`, p1.x+4, p1.y+4);
+    const a=az*DEG;
+    const p1=project(a, 0.001), p2=project(a, Math.PI/2-0.001);
+    if(p1 && p2){ ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
+      ctx.fillStyle="#7ea1d6"; ctx.font="11px system-ui"; ctx.fillText(`${az}°`, p1.x+4, p1.y+4);
     }
   }
 }
-
 function drawMilkyWay(){
   if(!showMW) return;
-  ctx.save();
-  ctx.globalAlpha=0.22;
-  ctx.fillStyle="#9ec9ff";
+  ctx.save(); ctx.globalAlpha=0.22; ctx.fillStyle="#9ec9ff";
   for(let k=0;k<4;k++){
     ctx.beginPath();
     for(let i=0;i<=360;i+=2){
-      const az = i*DEG;
-      const alt = (20*DEG*Math.sin((i*DEG)+k*0.7) + 20*DEG) * 0.5;
-      const p = project(az, alt);
-      if(!p) continue;
+      const az=i*DEG;
+      const alt=(20*DEG*Math.sin((i*DEG)+k*0.7) + 20*DEG) * 0.5;
+      const p=project(az, alt); if(!p) continue;
       if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
     }
-    ctx.closePath();
-    ctx.fill();
+    ctx.closePath(); ctx.fill();
   }
   ctx.restore();
 }
-
 function drawEcliptic(){
   if(!showEcliptic) return;
-  ctx.strokeStyle="#ffcf70"; ctx.lineWidth=1.2;
-  ctx.setLineDash([6,4]);
-  ctx.beginPath();
+  ctx.strokeStyle="#ffcf70"; ctx.lineWidth=1.2; ctx.setLineDash([6,4]); ctx.beginPath();
   for(let L=0;L<=360;L+=2){
-    const lam=L*DEG, beta=0;
-    const {ra,dec} = radecFromEcliptic(lam,beta);
-    const {az,alt} = azAltFromRADec(ra,dec, lat, currentLST);
+    const {ra,dec} = radecFromEcliptic(L*DEG, 0);
+    const {az,alt} = azAltFromRADec(ra, dec, lat, currentLST);
     const p=project(az,alt); if(!p) continue;
     if(L===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
   }
-  ctx.stroke();
-  ctx.setLineDash([]);
+  ctx.stroke(); ctx.setLineDash([]);
 }
-
 function drawStars(){
   ctx.save();
   for(const s of stars){
-    const {az,alt} = azAltFromRADec(s.ra,s.dec, lat, currentLST);
+    const {az,alt} = azAltFromRADec(s.ra, s.dec, lat, currentLST);
     if(alt<=0) continue;
-    const p = project(az,alt); if(!p) continue;
+    const p=project(az,alt); if(!p) continue;
     const size = clamp(2.2 - 0.28*s.mag, 0.6, 2.6);
-    ctx.fillStyle = "rgba(210,230,255,0.95)";
+    ctx.fillStyle="rgba(210,230,255,0.95)";
     ctx.beginPath(); ctx.arc(p.x,p.y,size,0,2*Math.PI); ctx.fill();
   }
   ctx.restore();
 }
-
 function drawMessier(){
   if(!showMessier) return;
-  ctx.save();
-  ctx.fillStyle="#a8ffe0"; ctx.strokeStyle="#a8ffe0"; ctx.lineWidth=1;
-  ctx.font="11px system-ui";
+  ctx.save(); ctx.fillStyle="#a8ffe0"; ctx.strokeStyle="#a8ffe0"; ctx.lineWidth=1; ctx.font="11px system-ui";
   for(const d of MESSIER){
-    const {az,alt} = azAltFromRADec(d.ra,d.dec, lat, currentLST);
+    const {az,alt} = azAltFromRADec(d.ra,d.dec,lat,currentLST);
     if(alt<=0) continue;
     const p=project(az,alt); if(!p) continue;
     ctx.beginPath(); ctx.arc(p.x,p.y,3.8,0,2*Math.PI); ctx.stroke();
@@ -452,32 +432,28 @@ function drawMessier(){
   }
   ctx.restore();
 }
-
 function drawPlanets(){
   if(!showPlanets) return;
-  ctx.save();
-  ctx.font="11px system-ui";
+  ctx.save(); ctx.font="11px system-ui";
   for(const pl of ["Mercury","Venus","Mars","Jupiter","Saturn"]){
-    const geq = geocentricEquatorial(pl, currentJD);
+    const geq=geocentricEquatorial(pl, currentJD);
     const {az,alt} = azAltFromRADec(geq.ra, geq.dec, lat, currentLST);
     if(alt<=0) continue;
     const p=project(az,alt); if(!p) continue;
     ctx.fillStyle = PLANETS.find(x=>x.name===pl).color;
     ctx.beginPath(); ctx.arc(p.x,p.y,3.8,0,2*Math.PI); ctx.fill();
-    if(showLabels){ ctx.fillText(\`◍ \${pl}\`, p.x+6, p.y-6); }
+    if(showLabels) ctx.fillText(`◍ ${pl}`, p.x+6, p.y-6);
   }
   ctx.restore();
 }
-
 function drawInfo(){ octx.clearRect(0,0,W,H); }
 
 let currentJD=0, currentLST=0;
-function draw(){
+function draw(first=false){
   currentJD = jdFromDate(time);
   currentLST = lst(currentJD, lon);
-  document.getElementById('lstRead').textContent = hmsFromRad(currentLST);
-  document.getElementById('latRead').textContent = (lat*RAD).toFixed(3)+"°";
-  drawBackground();
+  lstEl.textContent = hmsFromRad(currentLST);
+  drawBackground(first);
   drawGrid(currentLST);
   drawMilkyWay();
   drawEcliptic();
@@ -485,22 +461,17 @@ function draw(){
   drawMessier();
   drawPlanets();
   drawInfo();
+  debugEl.textContent = `W=${W} H=${H} | JD=${currentJD.toFixed(2)}`;
 }
 
-/* ===================== Interaction ===================== */
-function toast(msg, t=1600){
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.className='show';
-  setTimeout(()=>el.className='', t);
-}
+// ===== Interactions =====
+function toast(msg, t=1600){ const el=document.getElementById('toast'); el.textContent = msg; el.className='show'; setTimeout(()=>el.className='', t); }
 function setNow(){
-  const now = new Date();
-  time = new Date(now.getTime());
+  const now = new Date(); time = new Date(now.getTime());
   const d=document.getElementById('date'), ti=document.getElementById('time');
-  const pad=n=>n.toString().padStart(2,'0');
-  d.value = \`\${now.getFullYear()}-\${pad(now.getMonth()+1)}-\${pad(now.getDate())}\`;
-  ti.value = \`\${pad(now.getHours())}:\${pad(now.getMinutes())}:\${pad(now.getSeconds())}\`;
-  toast("Jumped to now");
+  d.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  ti.value = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  toast("Now set"); draw();
 }
 function fromInputs(){
   const d=document.getElementById('date').value;
@@ -515,7 +486,8 @@ function fromInputs(){
   lat = parseFloat(document.getElementById('lat').value || "33.422")*DEG;
   draw();
 }
-document.getElementById('btnNow').onclick = ()=>{ setNow(); draw(); };
+
+document.getElementById('btnNow').onclick = ()=>{ setNow(); };
 document.getElementById('btnGeo').onclick = ()=>{
   if(!navigator.geolocation){ toast("Geolocation not supported"); return; }
   navigator.geolocation.getCurrentPosition(p=>{
@@ -533,8 +505,8 @@ document.getElementById('presets').onchange = (e)=>{
 };
 ["lat","lon","date","time"].forEach(id=>document.getElementById(id).addEventListener('change', fromInputs));
 
-document.getElementById('zoom').oninput = (e)=>{ scale=parseFloat(e.target.value); document.getElementById('zoomRead').textContent=scale.toFixed(2)+"×"; draw();};
-document.getElementById('fov').oninput = (e)=>{ fov=parseFloat(e.target.value)*DEG; document.getElementById('fovRead').textContent=(fov*RAD).toFixed(0)+"°"; draw();};
+document.getElementById('zoom').oninput = (e)=>{ scale=parseFloat(e.target.value); draw();};
+document.getElementById('fov').oninput = (e)=>{ fov=parseFloat(e.target.value)*DEG; draw();};
 document.getElementById('flip').onchange = (e)=>{ mirror=e.target.checked; draw(); };
 document.getElementById('labels').onchange = (e)=>{ showLabels=e.target.checked; draw(); };
 document.getElementById('grid').onchange = (e)=>{ showGrid=e.target.checked; draw(); };
@@ -544,9 +516,7 @@ document.getElementById('messier').onchange = (e)=>{ showMessier=e.target.checke
 document.getElementById('planets').onchange = (e)=>{ showPlanets=e.target.checked; draw(); };
 
 let playing=false, rate=60;
-document.getElementById('play').onclick = (e)=>{
-  playing=!playing; e.target.textContent = playing ? "⏸ Pause" : "▶ Play";
-};
+document.getElementById('play').onclick = (e)=>{ playing=!playing; e.target.textContent = playing ? "⏸ Pause" : "▶ Play"; };
 document.getElementById('rate').onchange = (e)=>{ rate=parseInt(e.target.value,10); };
 document.getElementById('rew').onclick = ()=>{ time = new Date(time.getTime() - 3600*1000); draw(); };
 document.getElementById('ff').onclick = ()=>{ time = new Date(time.getTime() + 3600*1000); draw(); };
@@ -555,7 +525,8 @@ document.addEventListener('keydown', (ev)=>{
   if(ev.key==='d' || ev.key==='D'){ showLabels=!showLabels; document.getElementById('labels').checked=showLabels; draw(); }
 });
 
-sky.addEventListener('mousedown', (e)=>{ dragging=true; rotating = e.shiftKey; lastX=e.clientX; lastY=e.clientY; sky.style.cursor = rotating ? 'grab' : 'grabbing'; });
+sky.addEventListener('mousedown', (e)=>{ dragging=true; rotating=e.shiftKey; lastX=e.clientX; lastY=e.clientY; sky.style.cursor = rotating ? 'grab' : 'grabbing'; });
+let dragging=false, rotating=false, lastX=0, lastY=0;
 window.addEventListener('mouseup', ()=>{ dragging=false; sky.style.cursor='grab'; });
 window.addEventListener('mousemove', (e)=>{
   if(!dragging) return;
@@ -565,38 +536,42 @@ window.addEventListener('mousemove', (e)=>{
   else{ yaw += dx*k; pitch = clamp(pitch - dy*k*0.4, -0.6, 0.6); }
   draw();
 });
-sky.addEventListener('wheel', (e)=>{ e.preventDefault(); const z=parseFloat(document.getElementById('zoom').value); const nz = clamp(z*(e.deltaY<0?1.05:0.95), 0.6, 3.0); document.getElementById('zoom').value=nz; scale=nz; document.getElementById('zoomRead').textContent=scale.toFixed(2)+"×"; draw();}, {passive:false});
+sky.addEventListener('wheel', (e)=>{ e.preventDefault(); const z=parseFloat(document.getElementById('zoom').value); const nz = clamp(z*(e.deltaY<0?1.05:0.95), 0.6, 3.0); document.getElementById('zoom').value=nz; scale=nz; draw();}, {passive:false});
 
 document.getElementById('northBtn').onclick = ()=>{ yaw=0; draw(); };
 document.getElementById('zenithBtn').onclick = ()=>{ pitch=0; draw(); };
 document.getElementById('resetView').onclick = ()=>{ yaw=0; pitch=0; scale=1; document.getElementById('zoom').value=1; fov=180*DEG; document.getElementById('fov').value=180; draw(); };
 
-/* ===================== Animate ===================== */
+document.getElementById('nightToggle').onclick = ()=>{
+  document.documentElement.classList.toggle('night');
+  toast(document.documentElement.classList.contains('night') ? "Night vision: ON" : "Night vision: OFF");
+};
+
+// Animation loop
 function tick(){
   if(playing){
     time = new Date(time.getTime() + 1000*rate/60);
-    if(Math.floor(performance.now()/1000)%1===0){
-      const pad=n=>n.toString().padStart(2,'0');
-      document.getElementById('time').value = \`\${pad(time.getHours())}:\${pad(time.getMinutes())}:\${pad(time.getSeconds())}\`;
-      document.getElementById('date').value = \`\${time.getFullYear()}-\${pad(time.getMonth()+1)}-\${pad(time.getDate())}\`;
-    }
+    document.getElementById('time').value = `${pad(time.getHours())}:${pad(time.getMinutes())}:${pad(time.getSeconds())}`;
+    document.getElementById('date').value = `${time.getFullYear()}-${pad(time.getMonth()+1)}-${pad(time.getDate())}`;
   }
   draw();
   requestAnimationFrame(tick);
 }
 
-/* ===================== Init ===================== */
+// Init robust sizing
 function init(){
+  // Populate now & draw once
   setNow();
+  // Triple RAF + ResizeObserver + fallback
   requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
     resize();
     if('ResizeObserver' in window){
       const ro = new ResizeObserver(resize);
       ro.observe(document.getElementById('canvasWrap'));
-    }else{
+    } else {
       window.addEventListener('resize', resize);
     }
-    setTimeout(()=>resize(), 800);
+    setTimeout(resize, 800);
   })));
   tick();
 }
