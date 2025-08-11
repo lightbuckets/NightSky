@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.9 (Cosmic+ UltraSafe)</title>
+<title>Pocket Planetarium — v1.10 (Cosmic+ UltraSafe)</title>
 <style>
 /* ===== Cosmic+ Theme ===== */
 :root{
@@ -39,7 +39,7 @@ body::before{
 @keyframes twinkle{ 0%,100%{opacity:.55} 50%{opacity:.9} }
 
 /* Layout */
-#app{display:grid;grid-template-rows:78px 1fr 120px;grid-template-columns:400px 1fr;gap:14px;min-height:100vh;padding:14px;box-sizing:border-box}
+#app{display:grid;grid-template-rows:78px 1fr 120px;grid-template-columns:420px 1fr;gap:14px;min-height:100vh;padding:14px;box-sizing:border-box}
 header{grid-column:1/-1;display:flex;align-items:center;gap:12px}
 #brand{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,#09133b,#08112e);border:1px solid var(--edge);box-shadow:0 0 16px #000 inset, 0 0 28px rgba(126,231,255,.08)}
 #logo{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #b8fff7 0%, #6dd3ff 40%, #2a4bff 60%, #001637 72%); box-shadow:0 0 24px #69f2ff88}
@@ -61,11 +61,11 @@ header h1{margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:.45rem 0}
 .field{display:flex;flex-direction:column;gap:6px;min-width:150px}
 .field label{font-size:12px;color:var(--muted)}
-.field input,.field select{background:#08133a;border:1px solid #203780;color:var(--ink);border-radius:12px;padding:.6rem .72rem;font-size:14px;outline:none;transition:.15s}
+.field input,.field select{background:#08133a;border:1px solid #203780;color:#fff;border-radius:12px;padding:.6rem .72rem;font-size:14px;outline:none;transition:.15s}
 .field input:focus,.field select:focus{box-shadow:0 0 0 3px rgba(128,240,255,.25)}
 
 /* Fun buttons */
-.btn{--c1:#10306a; --c2:#0c2250; background:linear-gradient(135deg,var(--c1),var(--c2));border:1px solid #2847a0;color:var(--ink);padding:.66rem .9rem;border-radius:12px;font-weight:800;cursor:pointer;transition:.15s;user-select:none;letter-spacing:.2px;
+.btn{--c1:#10306a; --c2:#0c2250; background:linear-gradient(135deg,var(--c1),var(--c2));border:1px solid #2847a0;color:#fff;padding:.66rem .9rem;border-radius:12px;font-weight:800;cursor:pointer;transition:.15s;user-select:none;letter-spacing:.2px;
      box-shadow:0 6px 18px #0008, inset 0 0 0 0 rgba(126,231,255,.0)}
 .btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px #000a, inset 0 0 40px rgba(126,231,255,.08)}
 .btn:active{transform:translateY(0)}
@@ -88,7 +88,7 @@ header h1{margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba
 canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
 #canvasWrap::before{content:""; position:absolute; inset:-2px; border-radius:16px; pointer-events:none; box-shadow:0 0 120px 20px rgba(126,231,255,.08), inset 0 0 120px rgba(84,160,255,.06)}
 
-#toast{position:fixed;left:16px;bottom:16px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:12px;color:var(--ink);opacity:0;transform:translateY(8px);transition:.25s;box-shadow:0 12px 28px #000a}
+#toast{position:fixed;left:16px;bottom:16px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:12px;color:#eaf2ff;opacity:0;transform:translateY(8px);transition:.25s;box-shadow:0 12px 28px #000a}
 #toast.show{opacity:1;transform:translateY(0)}
 #debug{position:absolute;right:10px;top:10px;background:#07101cbb;border:1px solid #122341;border-radius:8px;padding:6px 8px;font-size:12px;color:#cfe1ff;pointer-events:none}
 
@@ -100,6 +100,11 @@ canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
 
 /* Meteor radiant label badge */
 .badgelite{display:inline-block;padding:.12rem .4rem;border:1px solid #2a4ba0;border-radius:999px;background:#08133a;color:#cfe1ff;font-size:11px}
+
+/* Sun & Moon panel badges */
+.callouts{display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:8px}
+.badge2{display:flex;align-items:center;gap:8px;padding:.5rem .6rem;border-radius:12px;border:1px solid #22408a;background:#0b1848;color:#eaf2ff;font-size:14px}
+.badge2 small{color:#a9c2ff}
 </style>
 </head>
 <body>
@@ -110,7 +115,7 @@ canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
       <div id="logo"></div>
       <h1>🪐 Pocket Planetarium</h1>
     </div>
-    <span class="badge">v1.9 Cosmic+ UltraSafe</span>
+    <span class="badge">v1.10 Cosmic+ UltraSafe</span>
     <span class="pill">W×H <span id="wh">—</span></span>
     <span class="pill">LST <span id="lstRead">—</span></span>
     <span style="flex:1"></span>
@@ -177,6 +182,16 @@ canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
       </select>
     </div>
 
+    <h3>☀️🌙 Sun & Moon</h3>
+    <div class="callouts">
+      <div class="badge2">🌅 Sunrise <span style="flex:1"></span><strong id="sunrise">—</strong></div>
+      <div class="badge2">🌇 Sunset <span style="flex:1"></span><strong id="sunset">—</strong></div>
+      <div class="badge2">🌙↑ Moonrise <span style="flex:1"></span><strong id="moonrise">—</strong></div>
+      <div class="badge2">🌙↓ Moonset <span style="flex:1"></span><strong id="moonset">—</strong></div>
+      <div class="badge2">🌗 Phase <span style="flex:1"></span><strong id="moonphase">—</strong> <small id="moonillum" style="margin-left:6px"> </small></div>
+      <div class="badge2"><button class="btn" id="recalc">↻ Recalc</button><small>date/location</small></div>
+    </div>
+
     <h3>⏳ Time Flow</h3>
     <div class="row">
       <button id="play" class="btn">▶ Play</button>
@@ -221,7 +236,7 @@ canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
       <button class="btn" id="zenithBtn">🪐 Zenith Up</button>
       <button class="btn" id="resetView">🔄 Reset View</button>
       <span style="flex:1"></span>
-      <span class="note">Demo accuracy: planets ~1–2°, radiants approximate.</span>
+      <span class="note">Demo accuracy: planets ~1–2°, radiants & moonrise/set approximate.</span>
     </div>
   </div>
 </div>
@@ -291,6 +306,17 @@ function planetPositionEcliptic(name, jd){
   const z=r*(Math.sin(nu+lp-o)*Math.sin(I));
   return {x,y,z};
 }
+function sunEquatorial(jd){
+  const e=planetPositionEcliptic("Earth", jd);
+  const x=-e.x, y=-e.y, z=-e.z; // Sun geocentric ecliptic
+  const eps=23.43928*DEG;
+  const xe=x;
+  const ye=y*Math.cos(eps) - z*Math.sin(eps);
+  const ze=y*Math.sin(eps) + z*Math.cos(eps);
+  const ra = mod(Math.atan2(ye, xe), 2*Math.PI);
+  const dec = Math.atan2(ze, Math.hypot(xe,ye));
+  return {ra, dec};
+}
 function geocentricEquatorial(name, jd){
   const eps=23.43928*DEG;
   const e=planetPositionEcliptic("Earth", jd);
@@ -302,6 +328,52 @@ function geocentricEquatorial(name, jd){
   const ra = mod(Math.atan2(ye, xe), 2*Math.PI);
   const dec = Math.atan2(ze, Math.hypot(xe,ye));
   return {ra, dec};
+}
+
+// ===== Moon (simplified) =====
+function moonEquatorial(jd){
+  // Based on simplified series (low accuracy, a few arcminutes)
+  const T = (jd - 2451545.0)/36525;
+  const Lp = (218.3164477 + 481267.88123421*T - 0.0015786*T*T + T*T*T/538841 - T*T*T*T/65194000)*DEG; // Moon mean long
+  const D  = (297.8501921 + 445267.1114034*T - 0.0018819*T*T + T*T*T/545868 - T*T*T*T/113065000)*DEG; // elongation
+  const M  = (357.5291092 + 35999.0502909*T - 0.0001536*T*T + T*T*T/24490000)*DEG; // Sun anomaly
+  const Mp = (134.9633964 + 477198.8675055*T + 0.0087414*T*T + T*T*T/69699 - T*T*T*T/14712000)*DEG; // Moon anomaly
+  const F  = (93.2720950 + 483202.0175233*T - 0.0036539*T*T - T*T*T/3526000 + T*T*T*T/863310000)*DEG; // argument of latitude
+  // Longitude and latitude (main terms)
+  const lon = Lp
+    + (6.289)*DEG*Math.sin(Mp)
+    + (1.274)*DEG*Math.sin(2*D - Mp)
+    + (0.658)*DEG*Math.sin(2*D)
+    + (0.214)*DEG*Math.sin(2*Mp)
+    + (0.110)*DEG*Math.sin(D);
+  const lat = (5.128)*DEG*Math.sin(F)
+    + (0.280)*DEG*Math.sin(Mp + F)
+    + (0.277)*DEG*Math.sin(Mp - F)
+    + (0.173)*DEG*Math.sin(2*D - F);
+  const eps=23.43928*DEG;
+  const {ra, dec} = radecFromEcliptic(lon, lat);
+  return {ra, dec};
+}
+function moonIllumination(jd){
+  const s = sunEquatorial(jd);
+  const m = moonEquatorial(jd);
+  // phase angle between Moon and Sun as seen from Earth
+  const cospsi = Math.sin(s.dec)*Math.sin(m.dec) + Math.cos(s.dec)*Math.cos(m.dec)*Math.cos(mod(s.ra - m.ra, 2*Math.PI));
+  const psi = Math.acos(clamp(cospsi,-1,1));
+  const k = (1 - Math.cos(psi))/2; // illuminated fraction
+  // age angle roughly: 0 new, 180 full
+  const age = mod(m.ra - s.ra, 2*Math.PI); // not exact synodic age, but works for naming
+  let name=""; const deg=age*RAD;
+  if(deg<22.5) name="New Moon";
+  else if(deg<67.5) name="Waxing Crescent";
+  else if(deg<112.5) name="First Quarter";
+  else if(deg<157.5) name="Waxing Gibbous";
+  else if(deg<202.5) name="Full Moon";
+  else if(deg<247.5) name="Waning Gibbous";
+  else if(deg<292.5) name="Last Quarter";
+  else if(deg<337.5) name="Waning Crescent";
+  else name="New Moon";
+  return {fraction:k, name};
 }
 
 // ===== Stars, Messier, Meteor Radiants =====
@@ -354,8 +426,8 @@ const deltaRead=document.getElementById('deltaRead');
 
 let W=0,H=0,R=0, scale=1, fov=180*DEG;
 let lat = 33.422*DEG, lon = -111.822*DEG;
-let baseTime = new Date();     // anchor for time scrubber
-let offsetSeconds = 0;         // current offset from baseTime (controlled by scrubber & play)
+let baseTime = new Date();
+let offsetSeconds = 0;
 let yaw=0, pitch=0, mirror=false;
 let showLabels=true, showGrid=true, showEcliptic=true, showMW=true, showMessier=true, showPlanets=true;
 let magLimit = 6.5;
@@ -396,16 +468,13 @@ function project(az, alt){
 
 function drawBackground(first=false){
   ctx.clearRect(0,0,W,H);
-  // vignette + horizon
   const g = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,R*1.12);
   g.addColorStop(0,"rgba(6,16,30,0)");
   g.addColorStop(1,"rgba(0,0,0,0.7)");
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle="#203456"; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.arc(W/2,H/2,R*scale,0,2*Math.PI); ctx.stroke();
-  // North marker
   const n = project(0,0); if(n){ ctx.fillStyle="#9bb2da"; ctx.font="12px system-ui"; ctx.fillText("N", n.x-3, n.y-6); }
-  // First draw cue
   if(first){
     ctx.fillStyle="#fff"; ctx.font="bold 16px system-ui";
     ctx.fillText("🚀 Ready", W/2-40, H/2-44);
@@ -461,7 +530,7 @@ function drawEcliptic(){
 function drawStars(){
   ctx.save();
   for(const s of stars){
-    if(s.mag > magLimit) continue;  // magnitude filter
+    if(s.mag > magLimit) continue;
     const {az,alt} = azAltFromRADec(s.ra, s.dec, lat, currentLST);
     if(alt<=0) continue;
     const p=project(az,alt); if(!p) continue;
@@ -499,9 +568,9 @@ function drawPlanets(){
   ctx.restore();
 }
 
-// Draw meteor radiants with optional animation (pulsing + spokes)
+// Meteor radiants overlay
 function drawRadiants(){
-  if(!showRadiants) return;
+  if(!showRadiants) { octx.clearRect(0,0,W,H); return; }
   const phase = animateRadiants ? (Date.now()%2000)/2000 : 0.3;
   const pulse = 0.6 + 0.4*Math.sin(phase*2*Math.PI);
   octx.clearRect(0,0,W,H);
@@ -512,13 +581,10 @@ function drawRadiants(){
     if(alt<=0) continue;
     const p=project(az,alt); if(!p) continue;
     const base=8, rad=base + 6*pulse;
-    // glow
     octx.beginPath(); octx.arc(p.x,p.y,rad+3,0,2*Math.PI);
     octx.fillStyle="rgba(120,220,255,0.12)"; octx.fill();
-    // ring
     octx.beginPath(); octx.arc(p.x,p.y,rad,0,2*Math.PI);
     octx.strokeStyle="rgba(160,240,255,0.8)"; octx.lineWidth=1; octx.setLineDash([4,3]); octx.stroke(); octx.setLineDash([]);
-    // spokes
     const spokes=6;
     for(let i=0;i<spokes;i++){
       const ang = (i/spokes)*2*Math.PI + phase*2*Math.PI;
@@ -528,7 +594,6 @@ function drawRadiants(){
       octx.lineTo(p.x + r2*Math.cos(ang), p.y + r2*Math.sin(ang));
       octx.strokeStyle="rgba(160,240,255,0.55)"; octx.lineWidth=1; octx.stroke();
     }
-    // label
     if(showLabels){
       octx.fillStyle="#ddfaff"; octx.font="11px system-ui";
       octx.fillText(`✴ ${r.name}`, p.x+10, p.y-8);
@@ -538,7 +603,7 @@ function drawRadiants(){
   octx.restore();
 }
 
-function drawInfo(){ /* overlay now used by radiants */ }
+function drawInfo(){ /* overlay in use */ }
 
 let currentJD=0, currentLST=0;
 function draw(first=false){
@@ -560,6 +625,63 @@ function draw(first=false){
   debugEl.textContent = `W=${W} H=${H} | JD=${currentJD.toFixed(2)} | Δ=${(offsetSeconds/3600).toFixed(2)}h`;
 }
 
+// ===== Sun/Moon rise-set calculations =====
+function localMidnightBase(){
+  // Use baseTime's local date (user's browser local time)
+  const b = baseTime;
+  return new Date(b.getFullYear(), b.getMonth(), b.getDate(), 0,0,0);
+}
+function altOfSun(d){
+  const jd=jdFromDate(d); const L=lst(jd, lon); const s = sunEquatorial(jd); return azAltFromRADec(s.ra, s.dec, lat, L).alt;
+}
+function altOfMoon(d){
+  const jd=jdFromDate(d); const L=lst(jd, lon); const m = moonEquatorial(jd); return azAltFromRADec(m.ra, m.dec, lat, L).alt;
+}
+function findEvents(){
+  const day0 = localMidnightBase();
+  const stepMin = 5;
+  const steps = Math.floor(24*60/stepMin);
+  // thresholds (apparent): Sun -0.833°, Moon +0.125°
+  const thSun = -0.833*DEG, thMoon = 0.125*DEG;
+  let prevSunAlt = altOfSun(new Date(day0.getTime()));
+  let prevMoonAlt = altOfMoon(new Date(day0.getTime()));
+  let sunrise=null,sunset=null, moonrise=null, moonset=null;
+  for(let i=1;i<=steps;i++){
+    const t = new Date(day0.getTime() + i*stepMin*60000);
+    const sa = altOfSun(t), ma = altOfMoon(t);
+    if(sunrise===null && prevSunAlt<thSun && sa>=thSun){ // rise
+      const f=(thSun - prevSunAlt)/(sa - prevSunAlt); sunrise = new Date(day0.getTime() + (i-1+f)*stepMin*60000);
+    }
+    if(sunset===null && prevSunAlt>thSun && sa<=thSun){ // set
+      const f=(prevSunAlt - thSun)/(prevSunAlt - sa); sunset = new Date(day0.getTime() + (i-1+f)*stepMin*60000);
+    }
+    if(moonrise===null && prevMoonAlt<thMoon && ma>=thMoon){
+      const f=(thMoon - prevMoonAlt)/(ma - prevMoonAlt); moonrise = new Date(day0.getTime() + (i-1+f)*stepMin*60000);
+    }
+    if(moonset===null && prevMoonAlt>thMoon && ma<=thMoon){
+      const f=(prevMoonAlt - thMoon)/(prevMoonAlt - ma); moonset = new Date(day0.getTime() + (i-1+f)*stepMin*60000);
+    }
+    prevSunAlt=sa; prevMoonAlt=ma;
+  }
+  // If events not found (e.g., polar), leave as null
+  const midJD = jdFromDate(new Date(day0.getTime()+12*3600000));
+  const illum = moonIllumination(midJD);
+  return {sunrise,sunset,moonrise,moonset,illum};
+}
+function fmtTime(d){
+  if(!d) return "—";
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function updateRiseSetUI(){
+  const {sunrise,sunset,moonrise,moonset,illum} = findEvents();
+  document.getElementById('sunrise').textContent = fmtTime(sunrise);
+  document.getElementById('sunset').textContent = fmtTime(sunset);
+  document.getElementById('moonrise').textContent = fmtTime(moonrise);
+  document.getElementById('moonset').textContent = fmtTime(moonset);
+  document.getElementById('moonphase').textContent = illum.name;
+  document.getElementById('moonillum').textContent = `(${Math.round(illum.fraction*100)}% lit)`;
+}
+
 // ===== Interactions =====
 function toast(msg, t=1600){ const el=document.getElementById('toast'); el.textContent = msg; el.className='show'; setTimeout(()=>el.className='', t); }
 function setNow(){
@@ -568,7 +690,7 @@ function setNow(){
   d.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
   ti.value = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   sc.value = "0"; deltaRead.textContent = "+0m";
-  toast("Now set"); draw();
+  toast("Now set"); draw(); updateRiseSetUI();
 }
 function fromInputs(){
   const d=document.getElementById('date').value;
@@ -584,7 +706,7 @@ function fromInputs(){
   }
   lon = parseFloat(document.getElementById('lon').value || "-111.822")*DEG;
   lat = parseFloat(document.getElementById('lat').value || "33.422")*DEG;
-  draw();
+  draw(); updateRiseSetUI();
 }
 
 document.getElementById('btnNow').onclick = ()=>{ setNow(); };
@@ -640,7 +762,7 @@ function updateDeltaRead(){
   deltaRead.textContent = `${sign}${hStr}${h&&m? " ":""}${mStr}`;
 }
 scrub.oninput = (e)=>{
-  playing=false; document.getElementById('play').textContent="▶ Play"; // stop play when scrubbing
+  playing=false; document.getElementById('play').textContent="▶ Play";
   offsetSeconds = parseInt(e.target.value,10);
   updateDeltaRead();
   draw();
@@ -681,17 +803,18 @@ document.getElementById('nightToggle').onclick = ()=>{
   toast(document.documentElement.classList.contains('night') ? "Night vision: ON" : "Night vision: OFF");
 };
 
+document.getElementById('recalc').onclick = ()=>{ updateRiseSetUI(); toast("Rise/Set recomputed"); };
+
 // Animation loop with real dt
 function tick(){
   const now = performance.now();
   const dt = (now - lastT)/1000; lastT = now;
   if(playing){
-    offsetSeconds += rate * dt; // rate = sim seconds per real second
+    offsetSeconds += rate * dt;
     offsetSeconds = Math.max(parseInt(scrub.min,10), Math.min(parseInt(scrub.max,10), offsetSeconds));
     scrub.value = Math.round(offsetSeconds);
     updateDeltaRead();
   }
-  // Reflect current simulated time into inputs (non-destructive to baseTime)
   const t = currentTime();
   document.getElementById('time').value = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
   document.getElementById('date').value = `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`;
@@ -713,6 +836,7 @@ function init(){
     setTimeout(resize, 800);
   })));
   updateDeltaRead();
+  updateRiseSetUI();
   tick();
 }
 init();
