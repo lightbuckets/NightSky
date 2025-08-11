@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.7 (Cosmic+ UltraSafe)</title>
+<title>Pocket Planetarium — v1.8 (Cosmic+ UltraSafe)</title>
 <style>
 /* ===== Cosmic+ Theme ===== */
 :root{
@@ -11,12 +11,9 @@
   --panel:#0a1240; --panel2:#0b154a; --accent:#7ee7ff; --accent2:#a4ffcc; --warn:#ffd36e;
 }
 html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+
 /* Nebula backdrop */
-@keyframes drift {
-  0%{background-position:0% 0%, 100% 0%, 50% 0%}
-  50%{background-position:100% 60%, 0% 40%, 50% 60%}
-  100%{background-position:0% 100%, 100% 100%, 50% 100%}
-}
+@keyframes drift { 0%{background-position:0% 0%, 100% 0%, 50% 0%} 50%{background-position:100% 60%, 0% 40%, 50% 60%} 100%{background-position:0% 100%, 100% 100%, 50% 100%} }
 body::before{
   content:""; position:fixed; inset:0; z-index:-3;
   background:
@@ -42,7 +39,7 @@ body::before{
 @keyframes twinkle{ 0%,100%{opacity:.55} 50%{opacity:.9} }
 
 /* Layout */
-#app{display:grid;grid-template-rows:78px 1fr 92px;grid-template-columns:380px 1fr;gap:14px;min-height:100vh;padding:14px;box-sizing:border-box}
+#app{display:grid;grid-template-rows:78px 1fr 110px;grid-template-columns:380px 1fr;gap:14px;min-height:100vh;padding:14px;box-sizing:border-box}
 header{grid-column:1/-1;display:flex;align-items:center;gap:12px}
 #brand{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,#09133b,#08112e);border:1px solid var(--edge);box-shadow:0 0 16px #000 inset, 0 0 28px rgba(126,231,255,.08)}
 #logo{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #b8fff7 0%, #6dd3ff 40%, #2a4bff 60%, #001637 72%); box-shadow:0 0 24px #69f2ff88}
@@ -58,7 +55,7 @@ header h1{margin:0;font-weight:900;letter-spacing:.3px;text-shadow:0 0 18px rgba
 }
 #sky{width:100%;height:100%;display:block;cursor:grab}
 #overlay{position:absolute;inset:0;pointer-events:none}
-#bottom{grid-row:3;grid-column:2;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#0a1338 0,#0b1230 100%);border:1px solid var(--edge);border-radius:16px;padding:12px;box-shadow:inset 0 0 40px rgba(126,231,255,.05)}
+#bottom{grid-row:3;grid-column:2;display:grid;grid-template-rows:auto auto;gap:10px;align-items:center;background:linear-gradient(180deg,#0a1338 0,#0b1230 100%);border:1px solid var(--edge);border-radius:16px;padding:12px;box-shadow:inset 0 0 40px rgba(126,231,255,.05)}
 
 .panel h3{margin:.4rem 0 .6rem;font-size:12px;color:#b8c9ff;text-transform:uppercase;letter-spacing:.16em}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:.4rem 0}
@@ -95,9 +92,11 @@ canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
 #toast.show{opacity:1;transform:translateY(0)}
 #debug{position:absolute;right:10px;top:10px;background:#07101cbb;border:1px solid #122341;border-radius:8px;padding:6px 8px;font-size:12px;color:#cfe1ff;pointer-events:none}
 
-/* Night vision mode */
-.night body, .night #left, .night #canvasWrap, .night #bottom, .night header{ filter:hue-rotate(-150deg) saturate(120%); }
-.night .legend, .night .pill, .night .badge{ filter:hue-rotate(-150deg) }
+.scrub-row{display:grid;grid-template-columns:60px 1fr 120px;gap:10px;align-items:center}
+.scrub-meta{display:flex;gap:10px;align-items:center;justify-content:flex-end;font-size:12px;color:#cfe1ff}
+.range{appearance:none;width:100%;height:10px;border-radius:999px;background:#0b1848;border:1px solid #21406e;outline:none}
+.range::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8ff,#6cf);border:1px solid #2b6;box-shadow:0 0 10px #8ff}
+.range::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8ff,#6cf);border:1px solid #2b6;box-shadow:0 0 10px #8ff}
 </style>
 </head>
 <body>
@@ -108,7 +107,7 @@ canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
       <div id="logo"></div>
       <h1>🪐 Pocket Planetarium</h1>
     </div>
-    <span class="badge">v1.7 Cosmic+ UltraSafe</span>
+    <span class="badge">v1.8 Cosmic+ UltraSafe</span>
     <span class="pill">W×H <span id="wh">—</span></span>
     <span class="pill">LST <span id="lstRead">—</span></span>
     <span style="flex:1"></span>
@@ -141,9 +140,9 @@ canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
     <h3>🖼️ View</h3>
     <div class="row">
       <span class="note">Zoom</span>
-      <input type="range" id="zoom" min="0.6" max="3.0" step="0.01" value="1.0"/>
+      <input type="range" id="zoom" class="range" min="0.6" max="3.0" step="0.01" value="1.0"/>
       <span class="note">FOV</span>
-      <input type="range" id="fov" min="80" max="200" step="1" value="180"/>
+      <input type="range" id="fov" class="range" min="80" max="200" step="1" value="180"/>
     </div>
     <div class="row">
       <label class="toggle"><input id="flip" type="checkbox" /><span>Mirror sky</span></label>
@@ -153,6 +152,13 @@ canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
       <label class="toggle"><input id="mw" type="checkbox" checked/><span>Milky Way glow</span></label>
       <label class="toggle"><input id="messier" type="checkbox" checked/><span>Messier</span></label>
       <label class="toggle"><input id="planets" type="checkbox" checked/><span>Planets</span></label>
+    </div>
+
+    <h3>⭐ Star Visibility</h3>
+    <div class="row">
+      <span class="note">Limit apparent magnitude</span>
+      <input type="range" id="magLimit" class="range" min="0" max="7" step="0.1" value="6.5"/>
+      <span class="pill">≤ <span id="magRead">6.5</span> mag</span>
     </div>
 
     <h3>⏳ Time Flow</h3>
@@ -185,11 +191,22 @@ canvas{image-rendering:optimizeSpeed;image-rendering:crisp-edges}
   </div>
 
   <div id="bottom">
-    <button class="btn" id="northBtn">🧭 Face North</button>
-    <button class="btn" id="zenithBtn">🪐 Zenith Up</button>
-    <button class="btn" id="resetView">🔄 Reset View</button>
-    <span style="flex:1"></span>
-    <span class="note">Demo accuracy: planets within ~1–2°.</span>
+    <!-- Time scrubber row -->
+    <div class="scrub-row">
+      <span class="note">Time</span>
+      <input id="timeScrub" class="range" type="range" min="-43200" max="43200" step="60" value="0" />
+      <div class="scrub-meta">
+        <span class="pill">Δ <span id="deltaRead">+0m</span></span>
+        <span class="pill">🕒 <span id="clockRead">—:—:—</span></span>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn" id="northBtn">🧭 Face North</button>
+      <button class="btn" id="zenithBtn">🪐 Zenith Up</button>
+      <button class="btn" id="resetView">🔄 Reset View</button>
+      <span style="flex:1"></span>
+      <span class="note">Demo accuracy: planets within ~1–2°.</span>
+    </div>
   </div>
 </div>
 
@@ -281,7 +298,7 @@ function makeStars(n=6500, seed=2025){
     const x=Math.acos(1-2*v)-Math.PI/2;
     const bias=0.35*Math.sin(ra*0.5)+0.45*Math.sin((ra+1.2)*1.0);
     const dec=clamp(x+bias*DEG*15,-Math.PI/2,Math.PI/2);
-    const mag=1.3 + -2*Math.log10(0.02+w*w);
+    const mag=1.3 + -2*Math.log10(0.02+w*w); // ~0..7ish
     out.push({ra,dec,mag});
   }
   return out;
@@ -307,12 +324,18 @@ const octx=ol.getContext('2d');
 const whEl=document.getElementById('wh');
 const lstEl=document.getElementById('lstRead');
 const debugEl=document.getElementById('debug');
+const clockRead=document.getElementById('clockRead');
+const deltaRead=document.getElementById('deltaRead');
 
 let W=0,H=0,R=0, scale=1, fov=180*DEG;
 let lat = 33.422*DEG, lon = -111.822*DEG;
-let time = new Date();
+let baseTime = new Date();     // anchor for time scrubber
+let offsetSeconds = 0;         // current offset from baseTime (controlled by scrubber & play)
 let yaw=0, pitch=0, mirror=false;
 let showLabels=true, showGrid=true, showEcliptic=true, showMW=true, showMessier=true, showPlanets=true;
+let magLimit = 6.5;
+
+function currentTime(){ return new Date(baseTime.getTime() + offsetSeconds*1000); }
 
 function safeSize(){
   let w=wrap.clientWidth, h=wrap.clientHeight;
@@ -355,7 +378,7 @@ function drawBackground(first=false){
   ctx.beginPath(); ctx.arc(W/2,H/2,R*scale,0,2*Math.PI); ctx.stroke();
   // North marker
   const n = project(0,0); if(n){ ctx.fillStyle="#9bb2da"; ctx.font="12px system-ui"; ctx.fillText("N", n.x-3, n.y-6); }
-  // First draw: friendly cue
+  // First draw cue
   if(first){
     ctx.fillStyle="#fff"; ctx.font="bold 16px system-ui";
     ctx.fillText("🚀 Ready", W/2-40, H/2-44);
@@ -411,11 +434,13 @@ function drawEcliptic(){
 function drawStars(){
   ctx.save();
   for(const s of stars){
+    if(s.mag > magLimit) continue;  // magnitude filter
     const {az,alt} = azAltFromRADec(s.ra, s.dec, lat, currentLST);
     if(alt<=0) continue;
     const p=project(az,alt); if(!p) continue;
-    const size = clamp(2.2 - 0.28*s.mag, 0.6, 2.6);
-    ctx.fillStyle="rgba(210,230,255,0.95)";
+    const size = clamp(2.4 - 0.32*s.mag, 0.6, 2.6);
+    const alpha = clamp(1.1 - 0.12*s.mag, 0.25, 0.95);
+    ctx.fillStyle=`rgba(210,230,255,${alpha.toFixed(2)})`;
     ctx.beginPath(); ctx.arc(p.x,p.y,size,0,2*Math.PI); ctx.fill();
   }
   ctx.restore();
@@ -450,9 +475,11 @@ function drawInfo(){ octx.clearRect(0,0,W,H); }
 
 let currentJD=0, currentLST=0;
 function draw(first=false){
-  currentJD = jdFromDate(time);
+  const t = currentTime();
+  currentJD = jdFromDate(t);
   currentLST = lst(currentJD, lon);
   lstEl.textContent = hmsFromRad(currentLST);
+  clockRead.textContent = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
   drawBackground(first);
   drawGrid(currentLST);
   drawMilkyWay();
@@ -461,16 +488,17 @@ function draw(first=false){
   drawMessier();
   drawPlanets();
   drawInfo();
-  debugEl.textContent = `W=${W} H=${H} | JD=${currentJD.toFixed(2)}`;
+  debugEl.textContent = `W=${W} H=${H} | JD=${currentJD.toFixed(2)} | Δ=${offsetSeconds/3600}h`;
 }
 
 // ===== Interactions =====
 function toast(msg, t=1600){ const el=document.getElementById('toast'); el.textContent = msg; el.className='show'; setTimeout(()=>el.className='', t); }
 function setNow(){
-  const now = new Date(); time = new Date(now.getTime());
-  const d=document.getElementById('date'), ti=document.getElementById('time');
+  const now = new Date(); baseTime = new Date(now.getTime()); offsetSeconds=0;
+  const d=document.getElementById('date'), ti=document.getElementById('time'), sc=document.getElementById('timeScrub');
   d.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
   ti.value = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  sc.value = "0"; deltaRead.textContent = "+0m";
   toast("Now set"); draw();
 }
 function fromInputs(){
@@ -480,7 +508,10 @@ function fromInputs(){
     const parts = d.split('-').map(Number);
     const tp = t.split(':').map(Number);
     const local = new Date(parts[0], parts[1]-1, parts[2], tp[0]||0, tp[1]||0, tp[2]||0 || 0);
-    time = new Date(local.getTime() - local.getTimezoneOffset()*60000);
+    baseTime = new Date(local.getTime() - local.getTimezoneOffset()*60000);
+    offsetSeconds = 0;
+    document.getElementById('timeScrub').value = "0";
+    deltaRead.textContent = "+0m";
   }
   lon = parseFloat(document.getElementById('lon').value || "-111.822")*DEG;
   lat = parseFloat(document.getElementById('lat').value || "33.422")*DEG;
@@ -515,18 +546,43 @@ document.getElementById('mw').onchange = (e)=>{ showMW=e.target.checked; draw();
 document.getElementById('messier').onchange = (e)=>{ showMessier=e.target.checked; draw(); };
 document.getElementById('planets').onchange = (e)=>{ showPlanets=e.target.checked; draw(); };
 
-let playing=false, rate=60;
-document.getElementById('play').onclick = (e)=>{ playing=!playing; e.target.textContent = playing ? "⏸ Pause" : "▶ Play"; };
+const magSlider = document.getElementById('magLimit');
+const magRead = document.getElementById('magRead');
+magSlider.oninput = (e)=>{ magLimit=parseFloat(e.target.value); magRead.textContent=magLimit.toFixed(1); draw(); };
+
+// Time scrubber
+const scrub = document.getElementById('timeScrub');
+function updateDeltaRead(){
+  const sign = offsetSeconds>=0?"+":"−";
+  const absSec = Math.abs(offsetSeconds);
+  const h = Math.floor(absSec/3600);
+  const m = Math.floor((absSec%3600)/60);
+  const hStr = h? `${h}h`:"";
+  const mStr = `${m}m`;
+  deltaRead.textContent = `${sign}${hStr}${h&&m? " ":""}${mStr}`;
+}
+scrub.oninput = (e)=>{
+  playing=false; document.getElementById('play').textContent="▶ Play"; // stop play when scrubbing
+  offsetSeconds = parseInt(e.target.value,10);
+  updateDeltaRead();
+  draw();
+};
+
+let playing=false, rate=60, lastT=performance.now();
+document.getElementById('play').onclick = (e)=>{
+  playing=!playing; e.target.textContent = playing ? "⏸ Pause" : "▶ Play";
+};
 document.getElementById('rate').onchange = (e)=>{ rate=parseInt(e.target.value,10); };
-document.getElementById('rew').onclick = ()=>{ time = new Date(time.getTime() - 3600*1000); draw(); };
-document.getElementById('ff').onclick = ()=>{ time = new Date(time.getTime() + 3600*1000); draw(); };
+document.getElementById('rew').onclick = ()=>{ offsetSeconds -= 3600; scrub.value = offsetSeconds; updateDeltaRead(); draw(); };
+document.getElementById('ff').onclick = ()=>{ offsetSeconds += 3600; scrub.value = offsetSeconds; updateDeltaRead(); draw(); };
 
 document.addEventListener('keydown', (ev)=>{
   if(ev.key==='d' || ev.key==='D'){ showLabels=!showLabels; document.getElementById('labels').checked=showLabels; draw(); }
 });
 
-sky.addEventListener('mousedown', (e)=>{ dragging=true; rotating=e.shiftKey; lastX=e.clientX; lastY=e.clientY; sky.style.cursor = rotating ? 'grab' : 'grabbing'; });
+// Drag, pan, zoom
 let dragging=false, rotating=false, lastX=0, lastY=0;
+sky.addEventListener('mousedown', (e)=>{ dragging=true; rotating=e.shiftKey; lastX=e.clientX; lastY=e.clientY; sky.style.cursor = rotating ? 'grab' : 'grabbing'; });
 window.addEventListener('mouseup', ()=>{ dragging=false; sky.style.cursor='grab'; });
 window.addEventListener('mousemove', (e)=>{
   if(!dragging) return;
@@ -547,13 +603,21 @@ document.getElementById('nightToggle').onclick = ()=>{
   toast(document.documentElement.classList.contains('night') ? "Night vision: ON" : "Night vision: OFF");
 };
 
-// Animation loop
+// Animation loop with real dt
 function tick(){
+  const now = performance.now();
+  const dt = (now - lastT)/1000; lastT = now;
   if(playing){
-    time = new Date(time.getTime() + 1000*rate/60);
-    document.getElementById('time').value = `${pad(time.getHours())}:${pad(time.getMinutes())}:${pad(time.getSeconds())}`;
-    document.getElementById('date').value = `${time.getFullYear()}-${pad(time.getMonth()+1)}-${pad(time.getDate())}`;
+    offsetSeconds += rate * dt; // rate = sim seconds per real second
+    // clamp slider range for UX; extend if needed
+    offsetSeconds = Math.max(parseInt(scrub.min,10), Math.min(parseInt(scrub.max,10), offsetSeconds));
+    scrub.value = Math.round(offsetSeconds);
+    updateDeltaRead();
   }
+  // Reflect current simulated time into inputs (non-destructive to baseTime)
+  const t = currentTime();
+  document.getElementById('time').value = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+  document.getElementById('date').value = `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`;
   draw();
   requestAnimationFrame(tick);
 }
@@ -573,6 +637,7 @@ function init(){
     }
     setTimeout(resize, 800);
   })));
+  updateDeltaRead();
   tick();
 }
 init();
