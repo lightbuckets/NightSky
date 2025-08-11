@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pocket Planetarium — v1.14.5 (View Tidy + DSO Panel)</title>
+<title>Pocket Planetarium — v1.14.6 (Canvas Fix)</title>
 <style>
 :root{ --bg:#040816; --ink:#eaf2ff; --muted:#a9c2ff; --edge:#1b2d6a; --panel:#0a1240; --accent:#7ee7ff; --warn:#ffd36e; --ok:#a4ffcc; }
 html,body{height:100%;margin:0;background:var(--bg);color:#eaf2ff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -56,7 +56,7 @@ html.night #redveil{opacity:1}
 <div id="app">
   <header>
     <div id="brand"><div id="logo"></div><h1>🪐 Pocket Planetarium</h1></div>
-    <span class="badge">v1.14.5</span>
+    <span class="badge">v1.14.6</span>
     <span class="pill">W×H <span id="wh">—</span></span>
     <span class="pill">LST <span id="lstRead">—</span></span>
     <span id="launchBadge" class="badge" style="display:none">🚀 Launch in <span id="badgeCountdown">—</span></span>
@@ -83,7 +83,6 @@ html.night #redveil{opacity:1}
 
     <details open>
       <summary><span class="chev">▶</span> 🖼️ View</summary>
-      <!-- Sliders group: Zoom, FOV, Star Magnitude -->
       <div class="row" style="width:100%">
         <div class="field" style="flex:1"><label>Zoom</label><input type="range" id="zoom" class="range" min="0.6" max="3.0" step="0.01" value="1.0"/></div>
         <div class="field" style="flex:1"><label>Field of View (°)</label><input type="range" id="fov" class="range" min="80" max="200" step="1" value="180"/></div>
@@ -91,7 +90,6 @@ html.night #redveil{opacity:1}
       <div class="row" style="width:100%">
         <div class="field" style="flex:1"><label>Star limit (mag) — ≤ <span id="magRead">6.5</span></label><input type="range" id="magLimit" class="range" min="0" max="8" step="0.1" value="6.5"/></div>
       </div>
-      <!-- Toggles -->
       <div class="row">
         <label class="toggle"><input id="flip" type="checkbox"/><span>Mirror sky</span></label>
         <label class="toggle"><input id="labels" type="checkbox" checked/><span>Labels</span></label>
@@ -161,7 +159,9 @@ html.night #redveil{opacity:1}
 <div id="toast" style="position:fixed;left:16px;bottom:16px;background:#0e1a2f;border:1px solid #21406e;padding:.6rem .8rem;border-radius:12px;color:#eaf2ff;opacity:0;transform:translateY(8px);transition:.25s">—</div>
 
 <script>
-// ---- Utilities & astro core (same as v1.14.4) ----
+window.addEventListener('error', e=>{ const el=document.getElementById('toast'); el.textContent='Error: '+(e.message||e); el.style.opacity=1; });
+
+// ---- Utilities & astro core ----
 const DEG=Math.PI/180, RAD=180/Math.PI, clamp=(x,a,b)=>Math.max(a,Math.min(b,x)), mod=(x,m)=>((x%m)+m)%m, pad=n=>n.toString().padStart(2,'0');
 function jdFromDate(date){ return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds())/86400000 + 2440587.5; }
 function gmst(jd){ const T=(jd-2451545.0)/36525.0; let s=67310.54841 + (876600*3600 + 8640184.812866)*T + 0.093104*T*T - 6.2e-6*T*T*T; return mod(s,86400)/240.0*DEG; }
@@ -223,12 +223,9 @@ function drawEcliptic(){ if(!showEcliptic) return; ctx.strokeStyle="#ffcf70"; ct
 function drawStars(){ for(const s of stars){ if(s.mag>magLimit) continue; const {az,alt}=azAltFromRADec(s.ra,s.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; const size=clamp(2.4 - 0.32*s.mag,0.6,2.6); const alpha=clamp(1.1 - 0.12*s.mag,0.25,0.95); ctx.fillStyle=`rgba(210,230,255,${alpha.toFixed(2)})`; ctx.beginPath(); ctx.arc(p.x,p.y,size,0,2*Math.PI); ctx.fill(); } }
 function drawDSOOnSky(){ ctx.save(); ctx.fillStyle="#a8ffe0"; ctx.strokeStyle="#a8ffe0"; ctx.lineWidth=1; ctx.font="11px system-ui"; for(const d of DSO){ const {az,alt}=azAltFromRADec(d.ra,d.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; ctx.beginPath(); ctx.arc(p.x,p.y,3.5,0,2*Math.PI); ctx.stroke(); if(showLabels) ctx.fillText(`⌾ ${d.name}`, p.x+6, p.y-6);} ctx.restore(); }
 function drawConstellations(){ if(!showConst) return; ctx.save(); ctx.strokeStyle="rgba(150,190,255,0.45)"; ctx.lineWidth=0.9; for(const C of CONSTS){ for(const seg of C.lines){ const a=seg[0],b=seg[1]; const ap=azAltFromRADec(a.ra,a.dec,lat,currentLST), bp=azAltFromRADec(b.ra,b.dec,lat,currentLST); if(ap.alt<=0||bp.alt<=0) continue; const p1=project(ap.az,ap.alt), p2=project(bp.az,bp.alt); if(p1&&p2){ ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); } } } ctx.restore(); }
-
-// ---- Radiant (static ring for now) ----
-const RADIANTS=[{name:"Perseids", ra:(3+4/60)*15*DEG, dec:58*DEG, when:"Aug 11–13"}];
 function drawRadiants(){ for(const r of RADIANTS){ const {az,alt}=azAltFromRADec(r.ra,r.dec,lat,currentLST); if(alt<=0) continue; const p=project(az,alt); if(!p) continue; const rad=12; octx.beginPath(); octx.arc(p.x,p.y,rad,0,2*Math.PI); octx.strokeStyle="rgba(160,240,255,0.8)"; octx.setLineDash([4,3]); octx.stroke(); octx.setLineDash([]); if(showLabels){ octx.fillStyle="#ddfaff"; octx.font="11px system-ui"; octx.fillText(`✴ ${r.name}`, p.x+10, p.y-8);} } }
 
-// ---- Launches (same behavior as v1.14.4) ----
+// ---- Launches (same behavior as v1.14.5) ----
 async function fetchLaunches(){
   try{
     launchStatus.textContent="Fetching from Launch Library 2…";
@@ -236,7 +233,7 @@ async function fetchLaunches(){
     const resp=await fetch(url, {headers:{'Accept':'application/json'}});
     const data=await resp.json();
     const out=[];
-    for(const L of data.results||[]){
+    for(const L of (data.results||[])){
       const siteName = (L.pad?.location?.name||"") + " " + (L.pad?.name||"");
       const isKSC = /Kennedy|Canaveral|Cape/i.test(siteName);
       const isVBG = /Vandenberg/i.test(siteName);
@@ -383,11 +380,15 @@ function draw(){
 // ---- Init ----
 function resizeLoop(){ resize(); requestAnimationFrame(()=>resize()); requestAnimationFrame(()=>requestAnimationFrame(()=>resize())); }
 function updateCountdownsTicker(){ updateCountdowns(); requestAnimationFrame(updateCountdownsTicker); }
-async function init(){
-  setNow();
-  resizeLoop(); window.addEventListener('resize', resize);
-  await fetchLaunches(); setInterval(()=>{ if(autoLaunch) fetchLaunches(); }, 3600*1000);
-  renderMiniCalendar(); renderDSOList(); updateCountdownsTicker();
+function init(){
+  try{
+    setNow();
+    resizeLoop(); window.addEventListener('resize', resize);
+    fetchLaunches(); setInterval(()=>{ if(autoLaunch) fetchLaunches(); }, 3600*1000);
+    renderMiniCalendar(); renderDSOList(); updateCountdownsTicker();
+  }catch(e){
+    const el=document.getElementById('toast'); el.textContent='Init error: '+(e.message||e); el.style.opacity=1;
+  }
 }
 init();
 </script>
